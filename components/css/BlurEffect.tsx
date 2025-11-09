@@ -56,8 +56,10 @@ export function CSSBlurEffect() {
       }
 
       // 0から40pxの範囲でマッピング
+      // 小数点以下2桁まで保持して、更新を確実にする
       const newBackdropBlur = normalizedValue * 40;
-      setDynamicBackdropBlur(Math.max(0, Math.min(40, newBackdropBlur)));
+      const roundedBlur = Math.round(newBackdropBlur * 100) / 100; // 小数点以下2桁まで
+      setDynamicBackdropBlur(Math.max(0, Math.min(40, roundedBlur)));
 
       animationFrameId = requestAnimationFrame(animate);
     };
@@ -342,8 +344,9 @@ export function CSSBlurEffect() {
                   : animatedBackdropBlur
               }px)`,
               transition: isBackdropBlurAnimated
-                ? "backdrop-filter 0.1s linear"
+                ? "none"
                 : "backdrop-filter 0.3s ease",
+              willChange: isBackdropBlurAnimated ? "backdrop-filter" : "auto",
             }}
           >
             <div
