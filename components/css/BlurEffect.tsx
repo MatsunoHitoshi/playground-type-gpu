@@ -2,16 +2,25 @@
 
 import { useState, useEffect } from "react";
 
+type ColorTheme =
+  | "rainbow"
+  | "blue"
+  | "red"
+  | "orange"
+  | "purple"
+  | "green"
+  | "yellow";
+
 export function CSSBlurEffect() {
-  const [blurAmount, setBlurAmount] = useState(5);
-  const [backdropBlur, setBackdropBlur] = useState(10);
   const [animatedBlur, setAnimatedBlur] = useState(0);
   const [animatedBackdropBlur, setAnimatedBackdropBlur] = useState(12);
+  const [textBackdropBlur, setTextBackdropBlur] = useState(4); // テキスト部分の背景ブラー用
   const [isPatternAnimated, setIsPatternAnimated] = useState(true);
   const [isBackdropBlurAnimated, setIsBackdropBlurAnimated] = useState(true);
   const [dynamicBackdropBlur, setDynamicBackdropBlur] = useState(12);
   const [patternTime, setPatternTime] = useState(0);
   const [isMounted] = useState(() => typeof window !== "undefined");
+  const [colorTheme, setColorTheme] = useState<ColorTheme>("rainbow"); // デフォルトは虹色
 
   // 背景ブラーのアニメーション
   useEffect(() => {
@@ -95,103 +104,40 @@ export function CSSBlurEffect() {
     };
   }, [isPatternAnimated, isMounted]);
 
+  // アニメーションが有効かどうかを判定
+  const isAnyAnimationActive = isPatternAnimated || isBackdropBlurAnimated;
+
+  // 色の基調に基づいて固定の色相を返す関数
+  const getFixedHue = (layer: 1 | 2): number => {
+    switch (colorTheme) {
+      case "rainbow":
+        // 虹色: 現在の実装（全色相範囲）を維持
+        return layer === 1 ? 120 : 180; // ベース色相のみ返す（後でrowOffsetを加算）
+      case "blue":
+        // 青: 210度（固定）
+        return 210;
+      case "red":
+        // 赤: 0度（固定）
+        return 0;
+      case "orange":
+        // オレンジ: 30度（固定）
+        return 30;
+      case "purple":
+        // 紫: 280度（固定）
+        return 280;
+      case "green":
+        // 緑: 120度（固定）
+        return 120;
+      case "yellow":
+        // 黄: 60度（固定）
+        return 60;
+      default:
+        return 120;
+    }
+  };
+
   return (
     <div className="w-full h-full space-y-4 sm:space-y-6 md:space-y-8 p-3 sm:p-4 md:p-6 lg:p-8">
-      {/* 背景画像付きコンテナ */}
-      <div className="relative w-full h-96 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500">
-        {/* 背景パターン */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="grid grid-cols-8 grid-rows-8 h-full w-full">
-            {Array.from({ length: 64 }).map((_, i) => (
-              <div
-                key={i}
-                className="border border-white/20"
-                style={{
-                  backgroundColor: `hsl(${(i * 5) % 360}, 70%, 50%)`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* ブラー効果を適用したオーバーレイ */}
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{
-            backdropFilter: `blur(${backdropBlur}px)`,
-            WebkitBackdropFilter: `blur(${backdropBlur}px)`,
-          }}
-        >
-          <div
-            className="bg-white/20 dark:bg-black/20 rounded-lg p-4 sm:p-6 md:p-8 backdrop-blur-sm"
-            style={{
-              filter: `blur(${blurAmount}px)`,
-            }}
-          >
-            <h3 className="text-4xl font-bold text-white drop-shadow-lg">
-              Blur Effect
-            </h3>
-            <p className="text-white/90 mt-2 text-lg">
-              CSS filter と backdrop-filter の組み合わせ
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          CSS Filter Blur
-        </h2>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Blur Amount: {blurAmount}px
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="40"
-            value={blurAmount}
-            onChange={(e) => setBlurAmount(Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Backdrop Blur: {backdropBlur}px
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="40"
-            value={backdropBlur}
-            onChange={(e) => setBackdropBlur(Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
-      </div>
-
-      {/* 複数のブラー効果の例 */}
-      {/* <div className="grid grid-cols-3 gap-4">
-        {[0, 5, 10].map((blur) => (
-          <div key={blur} className="relative h-48 rounded-lg overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-400 to-blue-600" />
-            <div
-              className="absolute inset-0 flex items-center justify-center bg-white/10"
-              style={{
-                backdropFilter: `blur(${blur}px)`,
-                WebkitBackdropFilter: `blur(${blur}px)`,
-              }}
-            >
-              <span className="text-white font-semibold text-lg">
-                {blur}px blur
-              </span>
-            </div>
-          </div>
-        ))}
-      </div> */}
-
       {/* アニメーション付きブラー */}
       <div className="space-y-4" suppressHydrationWarning>
         {/* アニメーション表示部分 */}
@@ -211,8 +157,13 @@ export function CSSBlurEffect() {
                 const adjustedTime =
                   isPatternAnimated && isMounted ? time - delay : 0;
 
-                // 左端のタイルの色を計算（時間に応じて周期的に変化）
-                const baseHue = (row * 30 + 120) % 360;
+                // 色相を取得（虹色の場合は行に応じて変化、それ以外は固定）
+                const baseHue = getFixedHue(1);
+                const hue =
+                  colorTheme === "rainbow"
+                    ? (baseHue + row * 30) % 360
+                    : baseHue;
+
                 // 周期的なアニメーション（波のような伝播効果）
                 const animationCycle = 6.0; // 6秒周期（より長くして伝播を明確に）
                 // 負の値も正の値に変換してからモジュロ演算
@@ -222,21 +173,37 @@ export function CSSBlurEffect() {
                 // 波のような効果：左端から右端へ伝播する波
                 const wavePhase =
                   normalizedTime * ((Math.PI * 2) / animationCycle);
-                const hueOffset =
-                  isPatternAnimated && isMounted
-                    ? Math.sin(wavePhase) * 120 // より大きな色相変化
-                    : 0;
-                const hue = (baseHue + hueOffset) % 360;
 
-                // 左端から伝播する色の変化（明るめの色をベースに）
+                // 位置に基づくグラデーション（行と列の位置で彩度と明度を変化）
+                const rowProgress = row / 11; // 0-1の範囲
+                const colProgress = col / 11; // 0-1の範囲
+                const positionFactor = (rowProgress + colProgress) / 2; // 0-1の範囲
+
+                // 彩度のグラデーション（位置とアニメーションで変化、0-100%の範囲で白から鮮やかな色まで）
+                const baseSaturation = positionFactor * 100; // 0-100%の範囲（白から鮮やかな色まで）
                 const saturation =
                   isPatternAnimated && isMounted
-                    ? 50 + Math.sin(wavePhase * 0.8) * 40 // より鮮やかな彩度変化
-                    : 80;
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          baseSaturation + Math.sin(wavePhase * 0.8) * 40
+                        )
+                      ) // アニメーションで±40%変化（0-100%にクランプ）
+                    : baseSaturation;
+
+                // 明度のグラデーション（位置とアニメーションで変化、広い範囲で白に近い部分まで含む）
+                const baseLightness = 20 + positionFactor * 75; // 20-95%の範囲（暗い部分から白に近い部分まで）
                 const lightness =
                   isPatternAnimated && isMounted
-                    ? 50 + Math.cos(wavePhase * 0.9) * 35 // より明るい明度変化
-                    : 70;
+                    ? Math.max(
+                        10,
+                        Math.min(
+                          95,
+                          baseLightness + Math.cos(wavePhase * 0.9) * 30
+                        )
+                      ) // アニメーションで±30%変化（10-95%にクランプ）
+                    : baseLightness;
 
                 // キーにpatternTimeを含めて強制的に再レンダリングをトリガー
                 const tileKey = `${i}-${Math.floor(patternTime * 10)}`;
@@ -273,8 +240,13 @@ export function CSSBlurEffect() {
                 const adjustedTime =
                   isPatternAnimated && isMounted ? time - delay : 0;
 
-                // 左端のタイルの色を計算（時間に応じて周期的に変化）
-                const baseHue = (row * 30 + 180) % 360;
+                // 色相を取得（虹色の場合は行に応じて変化、それ以外は固定）
+                const baseHue = getFixedHue(2);
+                const hue =
+                  colorTheme === "rainbow"
+                    ? (baseHue + row * 30) % 360
+                    : baseHue;
+
                 // 周期的なアニメーション（波のような伝播効果、第1レイヤーと異なる位相）
                 const animationCycle = 6.5; // 6.5秒周期（第1レイヤーと異なる）
                 // 負の値も正の値に変換してからモジュロ演算
@@ -284,21 +256,37 @@ export function CSSBlurEffect() {
                 // 波のような効果：左端から右端へ伝播する波
                 const wavePhase =
                   normalizedTime * ((Math.PI * 2) / animationCycle);
-                const hueOffset =
-                  isPatternAnimated && isMounted
-                    ? Math.cos(wavePhase) * 100 // より大きな色相変化
-                    : 0;
-                const hue = (baseHue + hueOffset) % 360;
 
-                // 左端から伝播する色の変化（明るめの色をベースに）
+                // 位置に基づくグラデーション（行と列の位置で彩度と明度を変化、第2レイヤーは逆方向）
+                const rowProgress = row / 11; // 0-1の範囲
+                const colProgress = col / 11; // 0-1の範囲
+                const positionFactor = 1 - (rowProgress + colProgress) / 2; // 0-1の範囲（逆方向）
+
+                // 彩度のグラデーション（位置とアニメーションで変化、0-100%の範囲で白から鮮やかな色まで）
+                const baseSaturation = (1 - positionFactor) * 100; // 0-100%の範囲（逆方向、白から鮮やかな色まで）
                 const saturation =
                   isPatternAnimated && isMounted
-                    ? 45 + Math.cos(wavePhase * 0.7) * 35 // より鮮やかな彩度変化
-                    : 70;
+                    ? Math.max(
+                        0,
+                        Math.min(
+                          100,
+                          baseSaturation + Math.cos(wavePhase * 0.7) * 35
+                        )
+                      ) // アニメーションで±35%変化（0-100%にクランプ）
+                    : baseSaturation;
+
+                // 明度のグラデーション（位置とアニメーションで変化、広い範囲で白に近い部分まで含む）
+                const baseLightness = 15 + (1 - positionFactor) * 80; // 15-95%の範囲（逆方向、暗い部分から白に近い部分まで）
                 const lightness =
                   isPatternAnimated && isMounted
-                    ? 50 + Math.sin(wavePhase * 1.0) * 30 // より明るい明度変化
-                    : 65;
+                    ? Math.max(
+                        10,
+                        Math.min(
+                          95,
+                          baseLightness + Math.sin(wavePhase * 1.0) * 25
+                        )
+                      ) // アニメーションで±25%変化（10-95%にクランプ）
+                    : baseLightness;
 
                 // キーにpatternTimeを含めて強制的に再レンダリングをトリガー
                 const tileKey2 = `layer2-${i}-${Math.floor(patternTime * 10)}`;
@@ -324,14 +312,15 @@ export function CSSBlurEffect() {
             <div
               className="absolute inset-0 bg-white/20"
               style={{
-                backdropFilter: `blur(${animatedBlur}px)`,
-                WebkitBackdropFilter: `blur(${animatedBlur}px)`,
+                backdropFilter: `blur(0px)`,
+                WebkitBackdropFilter: `blur(0px)`,
                 transition: "backdrop-filter 0.3s ease",
               }}
             />
           </div>
+          {/* 全体背景ブラー用のレイヤー */}
           <div
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute inset-0"
             style={{
               backdropFilter: `blur(${
                 isBackdropBlurAnimated
@@ -348,16 +337,20 @@ export function CSSBlurEffect() {
                 : "backdrop-filter 0.3s ease",
               willChange: isBackdropBlurAnimated ? "backdrop-filter" : "auto",
             }}
-          >
+          />
+          {/* テキスト部分（背景パターンの上に直接配置） */}
+          <div className="absolute inset-0 flex items-center justify-center z-10">
             <div
-              className="bg-white/20 dark:bg-black/20 rounded-lg p-4 sm:p-6 md:p-8 backdrop-blur-sm text-center"
+              className="bg-white/20 dark:bg-black/20 rounded-lg p-4 sm:p-6 md:p-8 text-center"
               style={{
                 filter: `blur(${animatedBlur}px)`,
-                transition: "filter 0.3s ease",
+                backdropFilter: `blur(${textBackdropBlur}px)`,
+                WebkitBackdropFilter: `blur(${textBackdropBlur}px)`,
+                transition: "filter 0.3s ease, backdrop-filter 0.3s ease",
               }}
             >
               <h3 className="text-4xl font-bold text-white drop-shadow-lg">
-                Animated Blur Effect
+                {isAnyAnimationActive ? "Animated " : ""}Blur Effect
               </h3>
             </div>
           </div>
@@ -370,6 +363,25 @@ export function CSSBlurEffect() {
           </h3>
 
           <div className="space-y-3">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                背景パターンの色の基調
+              </label>
+              <select
+                value={colorTheme}
+                onChange={(e) => setColorTheme(e.target.value as ColorTheme)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+              >
+                <option value="rainbow">虹色（デフォルト）</option>
+                <option value="blue">青</option>
+                <option value="red">赤</option>
+                <option value="orange">オレンジ</option>
+                <option value="purple">紫</option>
+                <option value="green">緑</option>
+                <option value="yellow">黄</option>
+              </select>
+            </div>
+
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -405,7 +417,7 @@ export function CSSBlurEffect() {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Blur: {animatedBlur}px
+              テキストブラー: {animatedBlur}px
             </label>
             <input
               type="range"
@@ -420,7 +432,22 @@ export function CSSBlurEffect() {
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Backdrop Blur:{" "}
+              テキスト背景ブラー: {textBackdropBlur}px
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="40"
+              step="0.5"
+              value={textBackdropBlur}
+              onChange={(e) => setTextBackdropBlur(Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              全体背景ブラー:{" "}
               {isBackdropBlurAnimated
                 ? dynamicBackdropBlur.toFixed(1)
                 : animatedBackdropBlur}
