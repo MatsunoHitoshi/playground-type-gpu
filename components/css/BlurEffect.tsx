@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Listbox, Transition } from "@headlessui/react";
+import { TouchCheckbox } from "@/components/common/TouchCheckbox";
+import { TouchSlider } from "@/components/common/TouchSlider";
 
 type ColorTheme =
   | "rainbow"
@@ -504,94 +506,60 @@ export function CSSBlurEffect() {
               </Listbox>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="pattern-animate-toggle"
-                checked={isPatternAnimated}
-                onChange={(e) => setIsPatternAnimated(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <label
-                htmlFor="pattern-animate-toggle"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                背景パターンアニメーションを有効化
-              </label>
-            </div>
+            <TouchCheckbox
+              id="pattern-animate-toggle"
+              checked={isPatternAnimated}
+              onChange={setIsPatternAnimated}
+              label="背景パターンアニメーションを有効化"
+            />
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="backdrop-blur-animate-toggle"
-                checked={isBackdropBlurAnimated}
-                onChange={(e) => setIsBackdropBlurAnimated(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <label
-                htmlFor="backdrop-blur-animate-toggle"
-                className="text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                背景ブラーアニメーションを有効化
-              </label>
-            </div>
+            <TouchCheckbox
+              id="backdrop-blur-animate-toggle"
+              checked={isBackdropBlurAnimated}
+              onChange={setIsBackdropBlurAnimated}
+              label="背景ブラーアニメーションを有効化"
+            />
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              テキストブラー: {animatedBlur}px
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="40"
-              step="0.5"
+          <div className="space-y-3 sm:space-y-4">
+            <TouchSlider
+              label="テキストブラー"
               value={animatedBlur}
-              onChange={(e) => setAnimatedBlur(Number(e.target.value))}
-              className="w-full"
+              onChange={setAnimatedBlur}
+              min={0}
+              max={40}
+              step={0.5}
+              formatValue={(val) => `${val}px`}
             />
-          </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              テキスト背景ブラー: {textBackdropBlur}px
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="40"
-              step="0.5"
+            <TouchSlider
+              label="テキスト背景ブラー"
               value={textBackdropBlur}
-              onChange={(e) => setTextBackdropBlur(Number(e.target.value))}
-              className="w-full"
+              onChange={setTextBackdropBlur}
+              min={0}
+              max={40}
+              step={0.5}
+              formatValue={(val) => `${val}px`}
             />
-          </div>
 
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              全体背景ブラー:{" "}
-              {isBackdropBlurAnimated
-                ? dynamicBackdropBlur.toFixed(1)
-                : animatedBackdropBlur}
-              px
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="40"
-              step="0.5"
+            <TouchSlider
+              label="全体背景ブラー"
               value={
                 isBackdropBlurAnimated
                   ? dynamicBackdropBlur
                   : animatedBackdropBlur
               }
-              onChange={(e) => {
-                const value = Number(e.target.value);
+              onChange={(value) => {
                 setAnimatedBackdropBlur(value);
                 setDynamicBackdropBlur(value);
               }}
+              min={0}
+              max={40}
+              step={0.5}
               disabled={isBackdropBlurAnimated}
-              className="w-full disabled:opacity-50"
+              formatValue={(val) =>
+                `${isBackdropBlurAnimated ? val.toFixed(1) : val}px`
+              }
             />
           </div>
         </div>
