@@ -23,8 +23,32 @@ export function CSSBlurEffect() {
     const animate = () => {
       const elapsed = (Date.now() - startTime) / 1000;
 
-      // Backdrop Blur値のアニメーション（ブラーアニメーションとは異なる位相で）
-      const newBackdropBlur = 20 + Math.cos(elapsed * 1.0) * 20;
+      // カスタム関数で0px付近でより長く留まるようにする
+      // 周期を長くして、0pxの時間を長くする
+      const cycleTime = elapsed % 8.0; // 8秒周期
+      let normalizedValue: number;
+
+      if (cycleTime < 2.0) {
+        // 最初の2秒間は0px付近で留まる
+        normalizedValue = 0;
+      } else if (cycleTime < 3.0) {
+        // 次の1秒で0から最大値へ
+        const t = (cycleTime - 2.0) / 1.0;
+        normalizedValue = Math.sin((t * Math.PI) / 2); // ease-in
+      } else if (cycleTime < 5.0) {
+        // 次の2秒間は最大値付近で留まる
+        normalizedValue = 1;
+      } else if (cycleTime < 6.0) {
+        // 次の1秒で最大値から0へ
+        const t = (cycleTime - 5.0) / 1.0;
+        normalizedValue = Math.cos((t * Math.PI) / 2); // ease-out
+      } else {
+        // 残りの2秒間は0px付近で留まる
+        normalizedValue = 0;
+      }
+
+      // 0から40pxの範囲でマッピング
+      const newBackdropBlur = normalizedValue * 40;
       setDynamicBackdropBlur(Math.max(0, Math.min(40, newBackdropBlur)));
 
       animationFrameId = requestAnimationFrame(animate);
