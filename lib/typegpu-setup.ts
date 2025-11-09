@@ -39,10 +39,30 @@ export async function getWebGPUDevice(): Promise<GPUDevice | null> {
 
       // デバイスが失われた場合の処理
       device.addEventListener("uncapturederror", (event) => {
-        console.error("WebGPU device lost:", event);
+        console.error("WebGPU uncapturederror:", event);
+        if (event instanceof GPUUncapturedErrorEvent && event.error) {
+          console.error("GPU Error details:", {
+            message: event.error.message,
+            error: event.error,
+          });
+        }
         cachedDevice = null;
         devicePromise = null;
       });
+
+      // デバイスが失われた場合の処理（device.lostイベント）
+      device.lost
+        .then((info) => {
+          console.error("WebGPU device lost:", {
+            reason: info.reason,
+            message: info.message,
+          });
+          cachedDevice = null;
+          devicePromise = null;
+        })
+        .catch((error) => {
+          console.error("Error in device.lost promise:", error);
+        });
 
       cachedDevice = device;
       return device;

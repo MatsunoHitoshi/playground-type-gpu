@@ -74,6 +74,52 @@ export function RealtimeBlurControls() {
               return select(0.0, 1.0, dist <= radius);
             }
 
+            // シンプルな文字描画関数（"BLUR"を描画）
+            fn drawText(uv: vec2<f32>, textPos: vec2<f32>) -> f32 {
+              let charSize = vec2<f32>(0.06, 0.1);
+              let spacing = 0.08;
+              
+              let char0UV = (uv - textPos) / charSize; // B
+              let char1UV = (uv - textPos - vec2<f32>(spacing, 0.0)) / charSize; // L
+              let char2UV = (uv - textPos - vec2<f32>(spacing * 2.0, 0.0)) / charSize; // U
+              let char3UV = (uv - textPos - vec2<f32>(spacing * 3.0, 0.0)) / charSize; // R
+              
+              var result = 0.0;
+              
+              if (char0UV.x >= 0.0 && char0UV.x < 1.0 && char0UV.y >= 0.0 && char0UV.y < 1.0) {
+                if ((char0UV.x < 0.15) || (char0UV.y < 0.15 && char0UV.x < 0.85) || 
+                    (char0UV.y > 0.4 && char0UV.y < 0.6 && char0UV.x < 0.85) || 
+                    (char0UV.y > 0.85 && char0UV.x < 0.85) || 
+                    (char0UV.x > 0.7 && char0UV.x < 0.85)) {
+                  result = 1.0;
+                }
+              }
+              
+              if (char1UV.x >= 0.0 && char1UV.x < 1.0 && char1UV.y >= 0.0 && char1UV.y < 1.0) {
+                if ((char1UV.x < 0.15) || (char1UV.y > 0.85 && char1UV.x < 0.85)) {
+                  result = 1.0;
+                }
+              }
+              
+              if (char2UV.x >= 0.0 && char2UV.x < 1.0 && char2UV.y >= 0.0 && char2UV.y < 1.0) {
+                if ((char2UV.x < 0.15) || (char2UV.x > 0.7 && char2UV.x < 0.85) || 
+                    (char2UV.y > 0.85 && char2UV.x < 0.85)) {
+                  result = 1.0;
+                }
+              }
+              
+              if (char3UV.x >= 0.0 && char3UV.x < 1.0 && char3UV.y >= 0.0 && char3UV.y < 1.0) {
+                if ((char3UV.x < 0.15) || (char3UV.y < 0.15 && char3UV.x < 0.85) || 
+                    (char3UV.y > 0.4 && char3UV.y < 0.6 && char3UV.x < 0.85) || 
+                    (char3UV.x > 0.7 && char3UV.x < 0.85 && char3UV.y < 0.5) || 
+                    (char3UV.x > 0.5 && char3UV.y > 0.5 && abs(char3UV.x - char3UV.y + 0.3) < 0.1)) {
+                  result = 1.0;
+                }
+              }
+              
+              return result;
+            }
+
             @fragment
             fn realtimeBlurFragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
               let intensity = params.x;
@@ -121,11 +167,18 @@ export function RealtimeBlurControls() {
                   
                   // サンプル位置の色を計算
                   let samplePattern = sin(sampleUV.x * 10.0 + time) * sin(sampleUV.y * 10.0 + time) * 0.5 + 0.5;
-                  let sampleColor = mix(
+                  var sampleColor = mix(
                     vec3<f32>(0.2, 0.3, 0.8),
                     vec3<f32>(0.8, 0.2, 0.4),
                     samplePattern
                   );
+                  
+                  // 文字を描画
+                  let textPos = vec2<f32>(0.15, 0.45);
+                  let textMask = drawText(sampleUV, textPos);
+                  if (textMask > 0.5) {
+                    sampleColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
+                  }
                   
                   color += vec4<f32>(sampleColor, 1.0) * weight;
                   totalWeight += weight;
@@ -136,6 +189,13 @@ export function RealtimeBlurControls() {
                 color /= totalWeight;
               } else {
                 color = vec4<f32>(baseColor, 1.0);
+              }
+              
+              // 最終的な色に文字を描画（ブラー適用後）
+              let textPos = vec2<f32>(0.15, 0.45);
+              let textMask = drawText(uv, textPos);
+              if (textMask > 0.5) {
+                color = mix(color, vec4<f32>(1.0, 1.0, 1.0, 1.0), 0.8);
               }
               
               return color;
@@ -239,60 +299,64 @@ export function RealtimeBlurControls() {
   }
 
   return (
-    <div className="w-full h-full space-y-4">
-      <div className="space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg">
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            ブラー強度: {blurIntensity.toFixed(2)}
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={blurIntensity}
-            onChange={(e) => setBlurIntensity(Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
+    <div className="w-full h-full flex flex-col">
+      <div className="shrink-0 space-y-4 p-4 bg-white dark:bg-gray-800 rounded-lg mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              ブラー強度: {blurIntensity.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={blurIntensity}
+              onChange={(e) => setBlurIntensity(Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            ブラー半径: {blurRadius.toFixed(2)}
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="0.3"
-            step="0.01"
-            value={blurRadius}
-            onChange={(e) => setBlurRadius(Number(e.target.value))}
-            className="w-full"
-          />
-        </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              ブラー半径: {blurRadius.toFixed(2)}
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="0.3"
+              step="0.01"
+              value={blurRadius}
+              onChange={(e) => setBlurRadius(Number(e.target.value))}
+              className="w-full"
+            />
+          </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            ブラータイプ
-          </label>
-          <select
-            value={blurType}
-            onChange={(e) => setBlurType(e.target.value as BlurType)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-          >
-            <option value="gaussian">ガウシアン</option>
-            <option value="box">ボックス</option>
-            <option value="motion">モーション</option>
-          </select>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              ブラータイプ
+            </label>
+            <select
+              value={blurType}
+              onChange={(e) => setBlurType(e.target.value as BlurType)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            >
+              <option value="gaussian">ガウシアン</option>
+              <option value="box">ボックス</option>
+              <option value="motion">モーション</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full rounded-lg"
-        width={800}
-        height={600}
-      />
+      <div className="flex-1 min-h-0">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full rounded-lg"
+          width={800}
+          height={600}
+        />
+      </div>
     </div>
   );
 }

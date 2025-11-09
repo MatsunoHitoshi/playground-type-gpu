@@ -71,6 +71,26 @@ export function DirectionalMotionBlur() {
             @group(0) @binding(0) var<uniform> params: vec4<f32>; // mouseX, mouseY, directionX, directionY
             @group(0) @binding(1) var<uniform> motionParams: vec3<f32>; // speed, blurIntensity, time
 
+            // シンプルな文字描画関数（"MOTION"を描画）
+            fn drawText(uv: vec2<f32>, textPos: vec2<f32>) -> f32 {
+              let charSize = vec2<f32>(0.05, 0.1);
+              let spacing = 0.07;
+              
+              // M, O, T, I, O, N を簡略化して描画
+              var result = 0.0;
+              for (var i = 0u; i < 6u; i++) {
+                let charUV = (uv - textPos - vec2<f32>(spacing * f32(i), 0.0)) / charSize;
+                if (charUV.x >= 0.0 && charUV.x < 1.0 && charUV.y >= 0.0 && charUV.y < 1.0) {
+                  // 各文字を矩形で簡略化
+                  if ((charUV.x < 0.15 || charUV.x > 0.85) || // 縦線
+                      (charUV.y < 0.15 || charUV.y > 0.85)) { // 横線
+                    result = 1.0;
+                  }
+                }
+              }
+              return result;
+            }
+
             @fragment
             fn directionalMotionBlurFragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
               let mousePos = params.xy;
@@ -126,6 +146,13 @@ export function DirectionalMotionBlur() {
                     samplePattern
                   );
                   
+                  // 文字を描画
+                  let textPos = vec2<f32>(0.1, 0.4);
+                  let textMask = drawText(sampleUV, textPos);
+                  if (textMask > 0.5) {
+                    sampleColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
+                  }
+                  
                   // マウス位置に近いほど明るく
                   let highlight = 1.0 - smoothstep(0.0, 0.2, sampleDist);
                   sampleColor += vec3<f32>(highlight * 0.3);
@@ -139,6 +166,13 @@ export function DirectionalMotionBlur() {
                 color /= totalWeight;
               } else {
                 color = vec4<f32>(baseColor, 1.0);
+              }
+              
+              // 最終的な色に文字を描画
+              let textPos = vec2<f32>(0.1, 0.4);
+              let textMask = drawText(uv, textPos);
+              if (textMask > 0.5) {
+                color = mix(color, vec4<f32>(1.0, 1.0, 1.0, 1.0), 0.8);
               }
               
               return color;

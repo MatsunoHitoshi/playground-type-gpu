@@ -62,7 +62,7 @@ export function CSSBlurEffect() {
   }, [isPatternAnimated, isMounted]);
 
   return (
-    <div className="w-full h-full space-y-8 p-8">
+    <div className="w-full h-full space-y-4 sm:space-y-6 md:space-y-8 p-3 sm:p-4 md:p-6 lg:p-8">
       {/* 背景画像付きコンテナ */}
       <div className="relative w-full h-96 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500">
         {/* 背景パターン */}
@@ -89,7 +89,7 @@ export function CSSBlurEffect() {
           }}
         >
           <div
-            className="bg-white/20 dark:bg-black/20 rounded-lg p-8 backdrop-blur-sm"
+            className="bg-white/20 dark:bg-black/20 rounded-lg p-4 sm:p-6 md:p-8 backdrop-blur-sm"
             style={{
               filter: `blur(${blurAmount}px)`,
             }}
@@ -315,7 +315,7 @@ export function CSSBlurEffect() {
             }}
           >
             <div
-              className="bg-white/20 dark:bg-black/20 rounded-lg p-8 backdrop-blur-sm text-center"
+              className="bg-white/20 dark:bg-black/20 rounded-lg p-4 sm:p-6 md:p-8 backdrop-blur-sm text-center"
               style={{
                 filter: `blur(${animatedBlur}px)`,
                 transition: "filter 0.3s ease",
@@ -329,7 +329,7 @@ export function CSSBlurEffect() {
         </div>
 
         {/* アニメーション用のコントロール */}
-        <div className="w-full space-y-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="w-full space-y-4 p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             アニメーションBlur設定
           </h3>

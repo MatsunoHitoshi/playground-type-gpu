@@ -60,10 +60,13 @@ export function MouseFollowBlur() {
         });
 
         // フラグメントシェーダー（マウス追従型ブラー）
-        const fragmentShader = device.createShaderModule({
-          label: "MouseFollowBlur fragment shader",
-          code: `
+        const fragmentShaderCode = `
             @group(0) @binding(0) var<uniform> params: vec4<f32>; // mouseX, mouseY, maxRadius, decayFactor
+
+            // シンプルな文字描画関数（一時的に無効化）
+            // fn drawText(uv: vec2<f32>, textPos: vec2<f32>) -> f32 {
+            //   return 0.0;
+            // }
 
             @fragment
             fn mouseFollowBlurFragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
@@ -104,6 +107,13 @@ export function MouseFollowBlur() {
                     sampleUV.x
                   );
                   
+                  // 文字を描画（一時的に無効化してエラーを確認）
+                  // let textPos = vec2<f32>(0.2, 0.4);
+                  // let textMask = drawText(sampleUV, textPos);
+                  // if (textMask > 0.5) {
+                  //   baseColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
+                  // }
+                  
                   // マウス位置に近いほど明るく
                   let mouseDist = distance(sampleUV, mousePos);
                   let highlight = 1.0 - smoothstep(0.0, 0.3, mouseDist);
@@ -123,13 +133,36 @@ export function MouseFollowBlur() {
                   vec3<f32>(0.8, 0.2, 0.4),
                   uv.x
                 );
+                
+                // 文字を描画（一時的に無効化してエラーを確認）
+                // let textPos = vec2<f32>(0.2, 0.4);
+                // let textMask = drawText(uv, textPos);
+                // if (textMask > 0.5) {
+                //   baseColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
+                // }
+                
                 color = vec4<f32>(baseColor, 1.0);
               }
               
               return color;
             }
-          `,
-        });
+          `;
+
+        let fragmentShader;
+        try {
+          fragmentShader = device.createShaderModule({
+            label: "MouseFollowBlur fragment shader",
+            code: fragmentShaderCode,
+          });
+        } catch (error) {
+          console.error("Shader compilation error:", error);
+          setError(
+            `Shader compilation failed: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          );
+          return;
+        }
 
         // レンダーパイプライン
         const pipeline = device.createRenderPipeline({

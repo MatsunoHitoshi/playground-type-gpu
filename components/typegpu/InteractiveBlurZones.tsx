@@ -144,6 +144,23 @@ export function InteractiveBlurZones() {
             @group(0) @binding(0) var<storage, read> blurZones: array<BlurZone, 10>;
             @group(0) @binding(1) var<uniform> params: vec2<f32>; // zoneCount, time
 
+            // シンプルな文字描画関数（"ZONES"を描画）
+            fn drawText(uv: vec2<f32>, textPos: vec2<f32>) -> f32 {
+              let charSize = vec2<f32>(0.05, 0.1);
+              let spacing = 0.07;
+              
+              var result = 0.0;
+              for (var i = 0u; i < 5u; i++) {
+                let charUV = (uv - textPos - vec2<f32>(spacing * f32(i), 0.0)) / charSize;
+                if (charUV.x >= 0.0 && charUV.x < 1.0 && charUV.y >= 0.0 && charUV.y < 1.0) {
+                  if ((charUV.x < 0.15 || charUV.x > 0.85) || (charUV.y < 0.15 || charUV.y > 0.85)) {
+                    result = 1.0;
+                  }
+                }
+              }
+              return result;
+            }
+
             @fragment
             fn interactiveBlurZonesFragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
               let zoneCount = u32(params.x);
@@ -198,11 +215,18 @@ export function InteractiveBlurZones() {
                   let weight = exp(-offsetDist * offsetDist / (2.0 * blurAmount * blurAmount + 0.001));
                   
                   let samplePattern = sin(sampleUV.x * 6.0 + time) * sin(sampleUV.y * 6.0 + time) * 0.5 + 0.5;
-                  let sampleColor = mix(
+                  var sampleColor = mix(
                     vec3<f32>(0.15, 0.25, 0.6),
                     vec3<f32>(0.6, 0.15, 0.35),
                     samplePattern
                   );
+                  
+                  // 文字を描画
+                  let textPos = vec2<f32>(0.15, 0.45);
+                  let textMask = drawText(sampleUV, textPos);
+                  if (textMask > 0.5) {
+                    sampleColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
+                  }
                   
                   color += vec4<f32>(sampleColor, 1.0) * weight;
                   sampleWeight += weight;
@@ -217,6 +241,13 @@ export function InteractiveBlurZones() {
               
               // ハイライトを追加
               color = vec4<f32>(color.rgb + vec3<f32>(highlight * 0.4), color.a);
+              
+              // 最終的な色に文字を描画
+              let textPos = vec2<f32>(0.15, 0.45);
+              let textMask = drawText(uv, textPos);
+              if (textMask > 0.5) {
+                color = mix(color, vec4<f32>(1.0, 1.0, 1.0, 1.0), 0.8);
+              }
               
               return color;
             }
@@ -413,7 +444,9 @@ export function InteractiveBlurZones() {
               </div>
               <button
                 onClick={() => {
-                  setZones((prev) => prev.filter((z) => z.id !== selectedZoneId));
+                  setZones((prev) =>
+                    prev.filter((z) => z.id !== selectedZoneId)
+                  );
                   setSelectedZoneId(null);
                 }}
                 className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
@@ -438,4 +471,3 @@ export function InteractiveBlurZones() {
     </div>
   );
 }
-
