@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Listbox, Transition } from "@headlessui/react";
 
 type ColorTheme =
   | "rainbow"
@@ -106,6 +107,49 @@ export function CSSBlurEffect() {
 
   // アニメーションが有効かどうかを判定
   const isAnyAnimationActive = isPatternAnimated || isBackdropBlurAnimated;
+
+  // 色の選択肢定義
+  const colorOptions = [
+    {
+      value: "rainbow" as ColorTheme,
+      label: "虹色（デフォルト）",
+      color:
+        "linear-gradient(45deg, hsl(0, 80%, 50%), hsl(60, 80%, 50%), hsl(120, 80%, 50%), hsl(180, 80%, 50%), hsl(240, 80%, 50%), hsl(300, 80%, 50%), hsl(360, 80%, 50%))",
+    },
+    {
+      value: "blue" as ColorTheme,
+      label: "青",
+      color: "hsl(210, 80%, 50%)",
+    },
+    {
+      value: "red" as ColorTheme,
+      label: "赤",
+      color: "hsl(0, 80%, 50%)",
+    },
+    {
+      value: "orange" as ColorTheme,
+      label: "オレンジ",
+      color: "hsl(30, 80%, 50%)",
+    },
+    {
+      value: "purple" as ColorTheme,
+      label: "紫",
+      color: "hsl(280, 80%, 50%)",
+    },
+    {
+      value: "green" as ColorTheme,
+      label: "緑",
+      color: "hsl(120, 80%, 50%)",
+    },
+    {
+      value: "yellow" as ColorTheme,
+      label: "黄",
+      color: "hsl(60, 80%, 50%)",
+    },
+  ];
+
+  const selectedColor =
+    colorOptions.find((opt) => opt.value === colorTheme) || colorOptions[0];
 
   // 色の基調に基づいて固定の色相を返す関数
   const getFixedHue = (layer: 1 | 2): number => {
@@ -365,21 +409,99 @@ export function CSSBlurEffect() {
           <div className="space-y-3">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                背景パターンの色の基調
+                背景パターンの色
               </label>
-              <select
-                value={colorTheme}
-                onChange={(e) => setColorTheme(e.target.value as ColorTheme)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
-              >
-                <option value="rainbow">虹色（デフォルト）</option>
-                <option value="blue">青</option>
-                <option value="red">赤</option>
-                <option value="orange">オレンジ</option>
-                <option value="purple">紫</option>
-                <option value="green">緑</option>
-                <option value="yellow">黄</option>
-              </select>
+              <Listbox value={colorTheme} onChange={setColorTheme}>
+                <div className="relative">
+                  <Listbox.Button className="relative w-full cursor-pointer rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <span className="flex items-center gap-2">
+                      <div
+                        className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shrink-0"
+                        style={{
+                          background: selectedColor.color,
+                        }}
+                      />
+                      <span className="block truncate text-gray-900 dark:text-gray-100">
+                        {selectedColor.label}
+                      </span>
+                    </span>
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                      <svg
+                        className="h-5 w-5 text-gray-400"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 3a.75.75 0 01.55.24l3.25 3.5a.75.75 0 11-1.1 1.02L10 4.852 7.3 7.76a.75.75 0 01-1.1-1.02l3.25-3.5A.75.75 0 0110 3zm-3.76 9.2a.75.75 0 011.06.04l2.7 2.908 2.7-2.908a.75.75 0 111.1 1.02l-3.25 3.5a.75.75 0 01-1.1 0l-3.25-3.5a.75.75 0 01.04-1.06z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </span>
+                  </Listbox.Button>
+                  <Transition
+                    enter="transition duration-100 ease-out"
+                    enterFrom="transform scale-95 opacity-0"
+                    enterTo="transform scale-100 opacity-100"
+                    leave="transition duration-75 ease-in"
+                    leaveFrom="transform scale-100 opacity-100"
+                    leaveTo="transform scale-95 opacity-0"
+                  >
+                    <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-1 text-sm shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                      {colorOptions.map((option) => (
+                        <Listbox.Option
+                          key={option.value}
+                          value={option.value}
+                          className={({ active }) =>
+                            `relative cursor-pointer select-none py-2 pl-3 pr-9 ${
+                              active
+                                ? "bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100"
+                                : "text-gray-900 dark:text-gray-100"
+                            }`
+                          }
+                        >
+                          {({ selected }) => (
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shrink-0"
+                                style={{
+                                  background: option.color,
+                                }}
+                              />
+                              <span
+                                className={`block truncate ${
+                                  selected ? "font-medium" : "font-normal"
+                                }`}
+                              >
+                                {option.label}
+                              </span>
+                              {selected && (
+                                <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600 dark:text-blue-400">
+                                  <svg
+                                    className="h-5 w-5"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    aria-hidden="true"
+                                  >
+                                    <path
+                                      fillRule="evenodd"
+                                      d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z"
+                                      clipRule="evenodd"
+                                    />
+                                  </svg>
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </Listbox.Option>
+                      ))}
+                    </Listbox.Options>
+                  </Transition>
+                </div>
+              </Listbox>
             </div>
 
             <div className="flex items-center space-x-2">
