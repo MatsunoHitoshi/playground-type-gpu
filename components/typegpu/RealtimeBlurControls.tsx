@@ -135,53 +135,142 @@ export function RealtimeBlurControls() {
                 pattern
               );
               
-              // ブラー効果を適用
+              // ブラー効果を適用（WebGPU公式サンプルに基づく実装）
+              // https://github.com/webgpu/webgpu-samples/tree/main/sample/imageBlur
               var color = vec4<f32>(0.0);
               var totalWeight = 0.0;
               
-              let samples = 16u;
-              let blurAmount = intensity * radius;
+              // ブラー半径をUV座標系に変換（適切なスケール）
+              let blurRadiusUV = radius * intensity;
               
-              for (var i = 0u; i < samples; i++) {
-                let angle = f32(i) / f32(samples) * 6.28318; // 2 * PI
-                let offset = vec2<f32>(cos(angle), sin(angle)) * blurAmount;
-                let sampleUV = uv + offset;
+              if (blurType < 0.5) {
+                // ガウシアンブラー: WebGPU公式サンプルのアプローチを参考に
+                // sigma値を正しく計算
+                let sigma = blurRadiusUV / 3.0;
+                // サンプリング範囲を3*sigmaに制限（99.7%のカバレッジ）
+                let sampleRadius = sigma * 3.0;
+                // フィルターサイズを計算（WebGPU公式サンプルのfilterSizeに相当）
+                let filterSize = u32(clamp(sampleRadius * 200.0, 3.0, 33.0));
+                // フィルターオフセット（中心からの距離）
+                let filterOffset = (filterSize - 1u) / 2u;
                 
-                if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
-                  let sampleDist = length(offset);
-                  var weight = 0.0;
-                  
-                  // ブラータイプに応じて重みを計算
-                  if (blurType < 0.5) {
-                    // ガウシアン
-                    weight = gaussianWeight(sampleDist, radius * 0.1);
-                  } else if (blurType < 1.5) {
-                    // ボックス
-                    weight = boxWeight(sampleDist, blurAmount);
-                  } else {
-                    // モーション（方向性）
-                    let motionDir = vec2<f32>(cos(time), sin(time));
-                    let dotProduct = dot(normalize(offset), motionDir);
-                    weight = exp(-abs(dotProduct) * 5.0) * gaussianWeight(sampleDist, radius * 0.1);
+                // グリッドベースのサンプリング（WebGPU公式サンプルのアプローチ）
+                for (var y = 0u; y < filterSize; y++) {
+                  for (var x = 0u; x < filterSize; x++) {
+                    let offsetX = f32(i32(x) - i32(filterOffset)) * (sampleRadius / f32(filterSize));
+                    let offsetY = f32(i32(y) - i32(filterOffset)) * (sampleRadius / f32(filterSize));
+                    let offset = vec2<f32>(offsetX, offsetY);
+                    let sampleUV = uv + offset;
+                    
+                    if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
+                      let dist = length(offset);
+                      // ガウシアン重み
+                      let weight = gaussianWeight(dist, sigma);
+                      
+                      // サンプル位置の色を計算
+                      let samplePattern = sin(sampleUV.x * 10.0 + time) * sin(sampleUV.y * 10.0 + time) * 0.5 + 0.5;
+                      var sampleColor = mix(
+                        vec3<f32>(0.2, 0.3, 0.8),
+                        vec3<f32>(0.8, 0.2, 0.4),
+                        samplePattern
+                      );
+                      
+                      // 文字を描画
+                      let textPos = vec2<f32>(0.15, 0.45);
+                      let textMask = drawText(sampleUV, textPos);
+                      if (textMask > 0.5) {
+                        sampleColor = vec3<f32>(1.0, 1.0, 1.0);
+                      }
+                      
+                      color += vec4<f32>(sampleColor, 1.0) * weight;
+                      totalWeight += weight;
+                    }
                   }
-                  
-                  // サンプル位置の色を計算
-                  let samplePattern = sin(sampleUV.x * 10.0 + time) * sin(sampleUV.y * 10.0 + time) * 0.5 + 0.5;
-                  var sampleColor = mix(
-                    vec3<f32>(0.2, 0.3, 0.8),
-                    vec3<f32>(0.8, 0.2, 0.4),
-                    samplePattern
-                  );
-                  
-                  // 文字を描画
-                  let textPos = vec2<f32>(0.15, 0.45);
-                  let textMask = drawText(sampleUV, textPos);
-                  if (textMask > 0.5) {
-                    sampleColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
+                }
+              } else if (blurType < 1.5) {
+                // ボックスブラー: WebGPU公式サンプルのボックスフィルター実装を参考に
+                // フィルターサイズを計算
+                let filterSize = u32(clamp(blurRadiusUV * 200.0, 3.0, 33.0));
+                let filterOffset = (filterSize - 1u) / 2u;
+                // 均一な重み（WebGPU公式サンプル: 1.0 / filterDim）
+                let uniformWeight = 1.0 / f32(filterSize * filterSize);
+                
+                // グリッドベースのサンプリング（WebGPU公式サンプルのアプローチ）
+                for (var y = 0u; y < filterSize; y++) {
+                  for (var x = 0u; x < filterSize; x++) {
+                    let offsetX = f32(i32(x) - i32(filterOffset)) * (blurRadiusUV / f32(filterSize));
+                    let offsetY = f32(i32(y) - i32(filterOffset)) * (blurRadiusUV / f32(filterSize));
+                    let offset = vec2<f32>(offsetX, offsetY);
+                    let sampleUV = uv + offset;
+                    
+                    if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
+                      let dist = length(offset);
+                      // ボックス内かどうかをチェック
+                      if (dist <= blurRadiusUV) {
+                        let weight = uniformWeight;
+                        
+                        let samplePattern = sin(sampleUV.x * 10.0 + time) * sin(sampleUV.y * 10.0 + time) * 0.5 + 0.5;
+                        var sampleColor = mix(
+                          vec3<f32>(0.2, 0.3, 0.8),
+                          vec3<f32>(0.8, 0.2, 0.4),
+                          samplePattern
+                        );
+                        
+                        let textPos = vec2<f32>(0.15, 0.45);
+                        let textMask = drawText(sampleUV, textPos);
+                        if (textMask > 0.5) {
+                          sampleColor = vec3<f32>(1.0, 1.0, 1.0);
+                        }
+                        
+                        color += vec4<f32>(sampleColor, 1.0) * weight;
+                        totalWeight += weight;
+                      }
+                    }
                   }
-                  
-                  color += vec4<f32>(sampleColor, 1.0) * weight;
-                  totalWeight += weight;
+                }
+              } else {
+                // モーションブラー: 方向性のあるブラー
+                let motionDir = normalize(vec2<f32>(cos(time), sin(time)));
+                let sigma = blurRadiusUV / 3.0;
+                let sampleRadius = sigma * 3.0;
+                let filterSize = u32(clamp(sampleRadius * 200.0, 3.0, 33.0));
+                let filterOffset = (filterSize - 1u) / 2u;
+                
+                for (var y = 0u; y < filterSize; y++) {
+                  for (var x = 0u; x < filterSize; x++) {
+                    let offsetX = f32(i32(x) - i32(filterOffset)) * (sampleRadius / f32(filterSize));
+                    let offsetY = f32(i32(y) - i32(filterOffset)) * (sampleRadius / f32(filterSize));
+                    let offset = vec2<f32>(offsetX, offsetY);
+                    let sampleUV = uv + offset;
+                    
+                    if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
+                      let dist = length(offset);
+                      if (dist <= sampleRadius) {
+                        // モーション方向への射影
+                        let offsetDir = normalize(offset);
+                        let dotProduct = dot(offsetDir, motionDir);
+                        // モーション方向に沿った重みを計算
+                        let motionWeight = exp(-abs(dotProduct) * 3.0);
+                        let weight = gaussianWeight(dist, sigma) * motionWeight;
+                        
+                        let samplePattern = sin(sampleUV.x * 10.0 + time) * sin(sampleUV.y * 10.0 + time) * 0.5 + 0.5;
+                        var sampleColor = mix(
+                          vec3<f32>(0.2, 0.3, 0.8),
+                          vec3<f32>(0.8, 0.2, 0.4),
+                          samplePattern
+                        );
+                        
+                        let textPos = vec2<f32>(0.15, 0.45);
+                        let textMask = drawText(sampleUV, textPos);
+                        if (textMask > 0.5) {
+                          sampleColor = vec3<f32>(1.0, 1.0, 1.0);
+                        }
+                        
+                        color += vec4<f32>(sampleColor, 1.0) * weight;
+                        totalWeight += weight;
+                      }
+                    }
+                  }
                 }
               }
               

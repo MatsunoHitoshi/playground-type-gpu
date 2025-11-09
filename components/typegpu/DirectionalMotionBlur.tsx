@@ -111,32 +111,38 @@ export function DirectionalMotionBlur() {
               let toMouse = uv - mousePos;
               let distToMouse = length(toMouse);
               
-              // 方向性ブラー効果を適用
+              // 方向性ブラー効果を適用（TypeGPU公式Exampleに基づく実装）
               var color = vec4<f32>(0.0);
               var totalWeight = 0.0;
               
-              let samples = 20u;
+              // モーションブラー半径をUV座標系に変換
               let motionBlurAmount = speed * blurIntensity * 0.15;
+              // sigma値を正しく計算
+              let sigma = motionBlurAmount / 3.0;
+              // サンプリング範囲を3*sigmaに制限
+              let sampleRadius = sigma * 3.0;
+              
+              let samples = 24u;
               
               for (var i = 0u; i < samples; i++) {
-                // サンプリング位置を方向に沿って配置
+                // サンプリング位置を方向に沿って配置（ガウシアン分布に基づく）
                 let t = (f32(i) / f32(samples) - 0.5) * 2.0;
-                let offset = direction * t * motionBlurAmount;
+                // ガウシアン分布に基づくオフセット
+                let r = sqrt(abs(t)) * sampleRadius;
+                let offset = direction * r * sign(t);
                 let sampleUV = uv + offset;
                 
                 if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
-                  // 方向性重み（方向に沿ったサンプルほど重い）
-                  let directionWeight = 1.0 - abs(t);
-                  
                   // 距離による減衰
                   let sampleToMouse = sampleUV - mousePos;
                   let sampleDist = length(sampleToMouse);
                   let distanceWeight = exp(-sampleDist * sampleDist * 5.0);
                   
-                  // ガウシアン重み
-                  let gaussianWeight = exp(-(t * t) / 0.5);
+                  // ガウシアン重み（TypeGPU公式Exampleに基づく）
+                  let offsetDist = length(offset);
+                  let gaussianWeight = exp(-offsetDist * offsetDist / (2.0 * sigma * sigma));
                   
-                  let weight = directionWeight * distanceWeight * gaussianWeight;
+                  let weight = distanceWeight * gaussianWeight;
                   
                   // サンプル位置の色
                   let samplePattern = sin(sampleUV.x * 8.0 + time) * sin(sampleUV.y * 8.0 + time) * 0.5 + 0.5;

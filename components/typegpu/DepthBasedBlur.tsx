@@ -115,15 +115,23 @@ export function DepthBasedBlur() {
                 pattern
               );
               
-              // 深度ブラー効果を適用
+              // 深度ブラー効果を適用（TypeGPU公式Exampleに基づく実装）
               var color = vec4<f32>(0.0);
               var totalWeight = 0.0;
               
-              let samples = 16u;
+              // sigma値を正しく計算
+              let sigma = blurRadius / 3.0;
+              // サンプリング範囲を3*sigmaに制限
+              let sampleRadius = sigma * 3.0;
+              
+              let samples = 24u;
               
               for (var i = 0u; i < samples; i++) {
+                // 均一分布の角度
                 let angle = f32(i) / f32(samples) * 6.28318; // 2 * PI
-                let offset = vec2<f32>(cos(angle), sin(angle)) * blurRadius;
+                // ガウシアン分布に基づく半径（より中心に近いサンプルを多く）
+                let r = sqrt(f32(i) / f32(samples)) * sampleRadius;
+                let offset = vec2<f32>(cos(angle), sin(angle)) * r;
                 let sampleUV = uv + offset;
                 
                 if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
@@ -131,9 +139,9 @@ export function DepthBasedBlur() {
                   let sampleDist = distance(sampleUV, mousePos);
                   let sampleDepth = clamp((sampleDist - minDepth) / (maxDepth - minDepth), 0.0, 1.0);
                   
-                  // ガウシアン重み
+                  // ガウシアン重み（TypeGPU公式Exampleに基づく）
                   let offsetDist = length(offset);
-                  let weight = exp(-offsetDist * offsetDist / (2.0 * blurRadius * blurRadius + 0.001));
+                  let weight = exp(-offsetDist * offsetDist / (2.0 * sigma * sigma));
                   
                   // サンプル位置の色（深度に応じて）
                   let sampleDepthColor = mix(

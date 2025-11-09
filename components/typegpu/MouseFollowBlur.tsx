@@ -4,6 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { initTypeGPU } from "@/lib/typegpu-setup";
 import { setupMouseTracking, MousePosition } from "@/lib/mouse-tracking";
 
+// シェーダーファイルをインポート
+import { blurComputeShader } from "@/shaders/mouse-follow-blur-compute";
+import { sceneFragmentShader } from "@/shaders/mouse-follow-blur-scene";
+import { displayFragmentShader } from "@/shaders/mouse-follow-blur-display";
+import { vertexShader } from "@/shaders/common-vertex";
+
+// WebGPU公式サンプルの定数
+const TILE_DIM = 128;
+const BATCH = [4, 4];
+
 export function MouseFollowBlur() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,143 +48,120 @@ export function MouseFollowBlur() {
           format,
         });
 
-        // 頂点シェーダー
-        const vertexShader = device.createShaderModule({
-          label: "MouseFollowBlur vertex shader",
-          code: `
-            struct VertexOutput {
-              @builtin(position) position: vec4<f32>,
-              @location(0) uv: vec2<f32>,
-            }
+        const canvasWidth = 800;
+        const canvasHeight = 600;
 
-            @vertex
-            fn vertexMain(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
-              var output: VertexOutput;
-              let x = f32((vertexIndex << 1u) & 2u) * 2.0 - 1.0;
-              let y = f32(vertexIndex & 2u) * 2.0 - 1.0;
-              output.position = vec4<f32>(x, y, 0.0, 1.0);
-              output.uv = vec2<f32>(x * 0.5 + 0.5, 1.0 - (y * 0.5 + 0.5));
-              return output;
-            }
-          `,
+        // サンプラー（WebGPU公式サンプルと同様）
+        const sampler = device.createSampler({
+          magFilter: "linear",
+          minFilter: "linear",
         });
 
-        // フラグメントシェーダー（マウス追従型ブラー）
-        const fragmentShaderCode = `
-            @group(0) @binding(0) var<uniform> params: vec4<f32>; // mouseX, mouseY, maxRadius, decayFactor
+        // テクスチャを作成（WebGPU公式サンプルと同様）
+        const sceneTexture = device.createTexture({
+          size: { width: canvasWidth, height: canvasHeight },
+          format: "rgba8unorm",
+          usage:
+            GPUTextureUsage.TEXTURE_BINDING |
+            GPUTextureUsage.RENDER_ATTACHMENT |
+            GPUTextureUsage.COPY_DST,
+        });
 
-            // シンプルな文字描画関数（一時的に無効化）
-            // fn drawText(uv: vec2<f32>, textPos: vec2<f32>) -> f32 {
-            //   return 0.0;
-            // }
-
-            @fragment
-            fn mouseFollowBlurFragment(@location(0) uv: vec2<f32>) -> @location(0) vec4<f32> {
-              let mousePos = params.xy;
-              let maxRadius = params.z;
-              let decayFactor = params.w;
-              
-              // マウス位置からの距離を計算
-              let dist = distance(uv, mousePos);
-              
-              // 距離に基づいてブラー強度を計算（ガウシアン減衰）
-              var blurIntensity = 0.0;
-              if (dist < maxRadius) {
-                let normalizedDist = dist / maxRadius;
-                blurIntensity = exp(-normalizedDist * normalizedDist * decayFactor);
-              }
-              
-              // ブラー効果を適用（サンプリング）
-              var color = vec4<f32>(0.0);
-              var totalWeight = 0.0;
-              
-              let samples = 16u;
-              let blurRadius = blurIntensity * 0.1;
-              
-              for (var i = 0u; i < samples; i++) {
-                let angle = f32(i) / f32(samples) * 6.28318; // 2 * PI
-                let offset = vec2<f32>(cos(angle), sin(angle)) * blurRadius;
-                let sampleUV = uv + offset;
-                
-                if (sampleUV.x >= 0.0 && sampleUV.x <= 1.0 && sampleUV.y >= 0.0 && sampleUV.y <= 1.0) {
-                  let sampleDist = length(offset);
-                  let weight = exp(-sampleDist * sampleDist / (2.0 * 0.01));
-                  
-                  // グラデーション背景
-                  var baseColor = mix(
-                    vec3<f32>(0.2, 0.3, 0.8),
-                    vec3<f32>(0.8, 0.2, 0.4),
-                    sampleUV.x
-                  );
-                  
-                  // 文字を描画（一時的に無効化してエラーを確認）
-                  // let textPos = vec2<f32>(0.2, 0.4);
-                  // let textMask = drawText(sampleUV, textPos);
-                  // if (textMask > 0.5) {
-                  //   baseColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
-                  // }
-                  
-                  // マウス位置に近いほど明るく
-                  let mouseDist = distance(sampleUV, mousePos);
-                  let highlight = 1.0 - smoothstep(0.0, 0.3, mouseDist);
-                  baseColor += vec3<f32>(highlight * 0.5);
-                  
-                  color += vec4<f32>(baseColor, 1.0) * weight;
-                  totalWeight += weight;
-                }
-              }
-              
-              if (totalWeight > 0.0) {
-                color /= totalWeight;
-              } else {
-                // フォールバック
-                let baseColor = mix(
-                  vec3<f32>(0.2, 0.3, 0.8),
-                  vec3<f32>(0.8, 0.2, 0.4),
-                  uv.x
-                );
-                
-                // 文字を描画（一時的に無効化してエラーを確認）
-                // let textPos = vec2<f32>(0.2, 0.4);
-                // let textMask = drawText(uv, textPos);
-                // if (textMask > 0.5) {
-                //   baseColor = vec3<f32>(1.0, 1.0, 1.0); // 白い文字
-                // }
-                
-                color = vec4<f32>(baseColor, 1.0);
-              }
-              
-              return color;
-            }
-          `;
-
-        let fragmentShader;
-        try {
-          fragmentShader = device.createShaderModule({
-            label: "MouseFollowBlur fragment shader",
-            code: fragmentShaderCode,
+        const textures = [0, 1].map(() => {
+          return device.createTexture({
+            size: { width: canvasWidth, height: canvasHeight },
+            format: "rgba8unorm",
+            usage:
+              GPUTextureUsage.COPY_DST |
+              GPUTextureUsage.STORAGE_BINDING |
+              GPUTextureUsage.TEXTURE_BINDING,
           });
-        } catch (error) {
-          console.error("Shader compilation error:", error);
-          setError(
-            `Shader compilation failed: ${
-              error instanceof Error ? error.message : String(error)
-            }`
-          );
-          return;
-        }
+        });
 
-        // レンダーパイプライン
-        const pipeline = device.createRenderPipeline({
-          label: "MouseFollowBlur pipeline",
+        // フリップバッファ（WebGPU公式サンプルと同様）
+        const buffer0 = (() => {
+          const buffer = device.createBuffer({
+            size: 4,
+            mappedAtCreation: true,
+            usage: GPUBufferUsage.UNIFORM,
+          });
+          new Uint32Array(buffer.getMappedRange())[0] = 0;
+          buffer.unmap();
+          return buffer;
+        })();
+
+        const buffer1 = (() => {
+          const buffer = device.createBuffer({
+            size: 4,
+            mappedAtCreation: true,
+            usage: GPUBufferUsage.UNIFORM,
+          });
+          new Uint32Array(buffer.getMappedRange())[0] = 1;
+          buffer.unmap();
+          return buffer;
+        })();
+
+        // ブラーパラメータバッファ（WebGPU公式サンプルと同様）
+        const blurParamsBuffer = device.createBuffer({
+          size: 8, // Params struct: i32 + u32 = 4 + 4 = 8 bytes
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+        });
+
+        // マウスパラメータバッファ
+        const mouseParamsBuffer = device.createBuffer({
+          size: 16, // MouseParams struct: vec2<f32> + f32 + f32 = 8 + 4 + 4 = 16 bytes
+          usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
+        });
+
+        // シーン描画パイプライン（背景とテキストを描画）
+        const scenePipeline = device.createRenderPipeline({
+          label: "Scene render pipeline",
           layout: "auto",
           vertex: {
-            module: vertexShader,
+            module: device.createShaderModule({
+              code: vertexShader,
+            }),
             entryPoint: "vertexMain",
           },
           fragment: {
-            module: fragmentShader,
-            entryPoint: "mouseFollowBlurFragment",
+            module: device.createShaderModule({
+              code: sceneFragmentShader,
+            }),
+            entryPoint: "sceneFragment",
+            targets: [{ format: "rgba8unorm" }],
+          },
+          primitive: {
+            topology: "triangle-strip",
+          },
+        });
+
+        // コンピュートパイプライン（ブラー適用）
+        const blurPipeline = device.createComputePipeline({
+          label: "Blur compute pipeline",
+          layout: "auto",
+          compute: {
+            module: device.createShaderModule({
+              code: blurComputeShader,
+            }),
+            entryPoint: "main",
+          },
+        });
+
+        // 表示パイプライン（結果を画面に表示）
+        const displayPipeline = device.createRenderPipeline({
+          label: "Display render pipeline",
+          layout: "auto",
+          vertex: {
+            module: device.createShaderModule({
+              code: vertexShader,
+            }),
+            entryPoint: "vertexMain",
+          },
+          fragment: {
+            module: device.createShaderModule({
+              code: displayFragmentShader,
+            }),
+            entryPoint: "displayFragment",
             targets: [{ format }],
           },
           primitive: {
@@ -182,10 +169,52 @@ export function MouseFollowBlur() {
           },
         });
 
-        // ユニフォームバッファ
-        const uniformBuffer = device.createBuffer({
-          size: 16, // vec4<f32> = 16 bytes
-          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        // ブラーパラメータを更新
+        const filterSize = 15;
+        const blockDim = TILE_DIM - filterSize;
+        const updateBlurParams = () => {
+          device.queue.writeBuffer(
+            blurParamsBuffer,
+            0,
+            new Uint32Array([filterSize + 1, blockDim])
+          );
+        };
+        updateBlurParams();
+
+        // バインドグループ（WebGPU公式サンプルと同様）
+        const computeConstants = device.createBindGroup({
+          layout: blurPipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: sampler },
+            { binding: 1, resource: { buffer: blurParamsBuffer } },
+            { binding: 2, resource: { buffer: mouseParamsBuffer } },
+          ],
+        });
+
+        const computeBindGroup0 = device.createBindGroup({
+          layout: blurPipeline.getBindGroupLayout(1),
+          entries: [
+            { binding: 1, resource: sceneTexture.createView() },
+            { binding: 2, resource: textures[0].createView() },
+            { binding: 3, resource: { buffer: buffer0 } },
+          ],
+        });
+
+        const computeBindGroup1 = device.createBindGroup({
+          layout: blurPipeline.getBindGroupLayout(1),
+          entries: [
+            { binding: 1, resource: textures[0].createView() },
+            { binding: 2, resource: textures[1].createView() },
+            { binding: 3, resource: { buffer: buffer1 } },
+          ],
+        });
+
+        const displayBindGroup = device.createBindGroup({
+          layout: displayPipeline.getBindGroupLayout(0),
+          entries: [
+            { binding: 0, resource: sampler },
+            { binding: 1, resource: textures[1].createView() },
+          ],
         });
 
         // マウストラッキング設定
@@ -194,17 +223,55 @@ export function MouseFollowBlur() {
         });
 
         const render = () => {
-          // パラメータを更新
-          const params = new Float32Array([
+          // マウスパラメータを更新
+          const mouseParams = new Float32Array([
             mousePosition.x,
             mousePosition.y,
             0.2, // maxRadius
             2.0, // decayFactor
           ]);
-          device.queue.writeBuffer(uniformBuffer, 0, params);
+          device.queue.writeBuffer(mouseParamsBuffer, 0, mouseParams);
 
-          const encoder = device.createCommandEncoder();
-          const pass = encoder.beginRenderPass({
+          const commandEncoder = device.createCommandEncoder();
+
+          // 1. シーンを描画（背景とテキスト）
+          const scenePass = commandEncoder.beginRenderPass({
+            colorAttachments: [
+              {
+                view: sceneTexture.createView(),
+                clearValue: { r: 0.05, g: 0.05, b: 0.1, a: 1.0 },
+                loadOp: "clear",
+                storeOp: "store",
+              },
+            ],
+          });
+          scenePass.setPipeline(scenePipeline);
+          scenePass.draw(4);
+          scenePass.end();
+
+          // 2. コンピュートパスでブラーを適用（WebGPU公式サンプルと同様）
+          const computePass = commandEncoder.beginComputePass();
+          computePass.setPipeline(blurPipeline);
+          computePass.setBindGroup(0, computeConstants);
+
+          // 水平方向のブラー
+          computePass.setBindGroup(1, computeBindGroup0);
+          computePass.dispatchWorkgroups(
+            Math.ceil(canvasWidth / blockDim),
+            Math.ceil(canvasHeight / BATCH[1])
+          );
+
+          // 垂直方向のブラー
+          computePass.setBindGroup(1, computeBindGroup1);
+          computePass.dispatchWorkgroups(
+            Math.ceil(canvasHeight / blockDim),
+            Math.ceil(canvasWidth / BATCH[1])
+          );
+
+          computePass.end();
+
+          // 3. 結果を画面に表示
+          const displayPass = commandEncoder.beginRenderPass({
             colorAttachments: [
               {
                 view: context.getCurrentTexture().createView(),
@@ -214,22 +281,12 @@ export function MouseFollowBlur() {
               },
             ],
           });
+          displayPass.setPipeline(displayPipeline);
+          displayPass.setBindGroup(0, displayBindGroup);
+          displayPass.draw(6);
+          displayPass.end();
 
-          pass.setPipeline(pipeline);
-          const bindGroup = device.createBindGroup({
-            layout: pipeline.getBindGroupLayout(0),
-            entries: [
-              {
-                binding: 0,
-                resource: { buffer: uniformBuffer },
-              },
-            ],
-          });
-          pass.setBindGroup(0, bindGroup);
-          pass.draw(4);
-          pass.end();
-
-          device.queue.submit([encoder.finish()]);
+          device.queue.submit([commandEncoder.finish()]);
           animationFrameRef.current = requestAnimationFrame(render);
         };
 

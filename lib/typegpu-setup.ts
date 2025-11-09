@@ -41,10 +41,19 @@ export async function getWebGPUDevice(): Promise<GPUDevice | null> {
       device.addEventListener("uncapturederror", (event) => {
         console.error("WebGPU uncapturederror:", event);
         if (event instanceof GPUUncapturedErrorEvent && event.error) {
+          const error = event.error;
           console.error("GPU Error details:", {
-            message: event.error.message,
-            error: event.error,
+            message: error.message,
+            error: error,
+            name: "name" in error ? String(error.name) : undefined,
+            stack: "stack" in error ? String(error.stack) : undefined,
           });
+          // より詳細なエラー情報を出力
+          try {
+            console.error("Full error object:", JSON.stringify(error, null, 2));
+          } catch (e) {
+            console.error("Could not stringify error:", e);
+          }
         }
         cachedDevice = null;
         devicePromise = null;
