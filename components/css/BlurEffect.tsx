@@ -20,30 +20,38 @@ export function CSSBlurEffect() {
     let animationFrameId: number | null = null;
     const startTime = Date.now();
 
+    // ease-in-out関数（両端でゆっくり、中間で速く）
+    const easeInOut = (t: number): number => {
+      // tは0から1の範囲
+      // ease-in-out: 開始と終了でゆっくり、中間で速く
+      return t < 0.5
+        ? 2 * t * t // ease-in（前半）
+        : 1 - Math.pow(-2 * t + 2, 2) / 2; // ease-out（後半）
+    };
+
     const animate = () => {
       const elapsed = (Date.now() - startTime) / 1000;
 
-      // カスタム関数で0px付近でより長く留まるようにする
-      // 周期を長くして、0pxの時間を長くする
-      const cycleTime = elapsed % 8.0; // 8秒周期
+      // 8秒周期でアニメーション
+      const cycleTime = elapsed % 8.0;
       let normalizedValue: number;
 
-      if (cycleTime < 2.0) {
-        // 最初の2秒間は0px付近で留まる
+      if (cycleTime < 1.0) {
+        // 最初の1秒間は0px付近で留まる（ease-in-outでゆっくり開始）
         normalizedValue = 0;
-      } else if (cycleTime < 3.0) {
-        // 次の1秒で0から最大値へ
-        const t = (cycleTime - 2.0) / 1.0;
-        normalizedValue = Math.sin((t * Math.PI) / 2); // ease-in
-      } else if (cycleTime < 5.0) {
-        // 次の2秒間は最大値付近で留まる
+      } else if (cycleTime < 4.0) {
+        // 次の3秒で0から最大値へ（ease-in-outで両端でゆっくり、中間で速く）
+        const t = (cycleTime - 1.0) / 3.0; // 0から1に正規化
+        normalizedValue = easeInOut(t);
+      } else if (cycleTime < 4.5) {
+        // 次の0.5秒間は最大値付近で留まる
         normalizedValue = 1;
-      } else if (cycleTime < 6.0) {
-        // 次の1秒で最大値から0へ
-        const t = (cycleTime - 5.0) / 1.0;
-        normalizedValue = Math.cos((t * Math.PI) / 2); // ease-out
+      } else if (cycleTime < 7.5) {
+        // 次の3秒で最大値から0へ（ease-in-outで両端でゆっくり、中間で速く）
+        const t = (cycleTime - 4.5) / 3.0; // 0から1に正規化
+        normalizedValue = 1 - easeInOut(t); // 逆方向
       } else {
-        // 残りの2秒間は0px付近で留まる
+        // 残りの0.5秒間は0px付近で留まる（ease-in-outでゆっくり終了）
         normalizedValue = 0;
       }
 
