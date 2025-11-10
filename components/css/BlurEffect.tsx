@@ -409,13 +409,13 @@ export function CSSBlurEffect() {
           </h3>
 
           <div className="space-y-3">
-            <div className="space-y-2">
+            <div className="p-3 sm:p-4 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 space-y-3 *:border-0 *:bg-transparent *:dark:bg-transparent">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 背景パターンの色
               </label>
               <Listbox value={colorTheme} onChange={setColorTheme}>
                 <div className="relative">
-                  <Listbox.Button className="relative w-full cursor-pointer rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <Listbox.Button className="relative w-full cursor-pointer rounded-md border-0 bg-transparent dark:bg-transparent py-2 pl-3 pr-10 text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <span className="flex items-center gap-2">
                       <div
                         className="w-5 h-5 rounded-full border border-gray-300 dark:border-gray-600 shrink-0"
@@ -504,21 +504,13 @@ export function CSSBlurEffect() {
                   </Transition>
                 </div>
               </Listbox>
+              <TouchCheckbox
+                id="pattern-animate-toggle"
+                checked={isPatternAnimated}
+                onChange={setIsPatternAnimated}
+                label="背景パターンアニメーション"
+              />
             </div>
-
-            <TouchCheckbox
-              id="pattern-animate-toggle"
-              checked={isPatternAnimated}
-              onChange={setIsPatternAnimated}
-              label="背景パターンアニメーションを有効化"
-            />
-
-            <TouchCheckbox
-              id="backdrop-blur-animate-toggle"
-              checked={isBackdropBlurAnimated}
-              onChange={setIsBackdropBlurAnimated}
-              label="背景ブラーアニメーションを有効化"
-            />
           </div>
 
           <div className="space-y-3 sm:space-y-4">
@@ -542,25 +534,33 @@ export function CSSBlurEffect() {
               formatValue={(val) => `${val}px`}
             />
 
-            <TouchSlider
-              label="全体背景ブラー"
-              value={
-                isBackdropBlurAnimated
-                  ? dynamicBackdropBlur
-                  : animatedBackdropBlur
-              }
-              onChange={(value) => {
-                setAnimatedBackdropBlur(value);
-                setDynamicBackdropBlur(value);
-              }}
-              min={0}
-              max={40}
-              step={0.5}
-              disabled={isBackdropBlurAnimated}
-              formatValue={(val) =>
-                `${isBackdropBlurAnimated ? val.toFixed(1) : val}px`
-              }
-            />
+            <div className="p-3 sm:p-4 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 space-y-3 *:border-0 *:bg-transparent *:dark:bg-transparent">
+              <TouchSlider
+                label="全体背景ブラー"
+                value={
+                  isBackdropBlurAnimated
+                    ? dynamicBackdropBlur
+                    : animatedBackdropBlur
+                }
+                onChange={(value) => {
+                  setAnimatedBackdropBlur(value);
+                  setDynamicBackdropBlur(value);
+                }}
+                min={0}
+                max={40}
+                step={0.5}
+                disabled={isBackdropBlurAnimated}
+                formatValue={(val) =>
+                  `${isBackdropBlurAnimated ? val.toFixed(1) : val}px`
+                }
+              />
+              <TouchCheckbox
+                id="backdrop-blur-animate-toggle"
+                checked={isBackdropBlurAnimated}
+                onChange={setIsBackdropBlurAnimated}
+                label="背景ブラーアニメーション"
+              />
+            </div>
           </div>
         </div>
       </div>
