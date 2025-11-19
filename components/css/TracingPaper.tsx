@@ -2,11 +2,14 @@
 
 import React from "react";
 
+export type TextureType = "fine" | "rough";
+
 interface TracingPaperProps {
   className?: string;
   children?: React.ReactNode;
   opacity?: number;
   blurAmount?: number;
+  textureType?: TextureType;
 }
 
 export function TracingPaper({
@@ -14,10 +17,26 @@ export function TracingPaper({
   children,
   opacity = 0.4,
   blurAmount = 8,
+  textureType = "fine",
 }: TracingPaperProps) {
   const filterId = React.useId();
-  const turbulenceId = `turbulence-${filterId}`;
   const noiseId = `noise-${filterId}`;
+
+  // ノイズパラメータの設定
+  const noiseParams = {
+    fine: {
+      baseFrequency: "0.8",
+      numOctaves: "3",
+      type: "fractalNoise" as const,
+    },
+    rough: {
+      baseFrequency: "0.04",
+      numOctaves: "50",
+      type: "fractalNoise" as const, // 荒い紙の質感を出すためにfractalNoiseを使用
+    },
+  };
+
+  const params = noiseParams[textureType];
 
   return (
     <>
@@ -26,24 +45,39 @@ export function TracingPaper({
         <filter id={noiseId}>
           {/* 紙の繊維感のような細かなノイズ */}
           <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.8"
-            numOctaves="3"
+            type={params.type}
+            baseFrequency={params.baseFrequency}
+            numOctaves={params.numOctaves}
             stitchTiles="stitch"
             result="noise"
           />
-          {/* ノイズのコントラスト調整 */}
+
+          {/* 粗い紙の場合はライティング効果を追加して立体感を出す */}
+          {textureType === "rough" && (
+            <>
+              <feDiffuseLighting
+                in="noise"
+                lightingColor="white"
+                surfaceScale="2"
+                result="diffuseNoise"
+              >
+                <feDistantLight azimuth="45" elevation="60" />
+              </feDiffuseLighting>
+            </>
+          )}
+
+          {/* ノイズのコントラスト調整とグレースケール化 */}
           <feColorMatrix
             type="matrix"
-            values="1 0 0 0 0
+            // R, G, B の値を統一してグレースケール化（虹色ノイズの防止）
+            // ここではGチャンネルの値を採用
+            values="0 1 0 0 0
                     0 1 0 0 0
-                    0 0 1 0 0
+                    0 1 0 0 0
                     0 0 0 0.5 0"
-            in="noise"
+            in={textureType === "rough" ? "diffuseNoise" : "noise"}
             result="coloredNoise"
           />
-          {/* ノイズを少しぼかして馴染ませる */}
-          {/* <feGaussianBlur stdDeviation="0.5" in="coloredNoise" /> */}
         </filter>
       </svg>
 

@@ -2,91 +2,111 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { TracingPaper } from "@/components/css/TracingPaper";
+import { TracingPaper, TextureType } from "@/components/css/TracingPaper";
 import { TouchSlider } from "@/components/common/TouchSlider";
 import { TouchCheckbox } from "@/components/common/TouchCheckbox";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 
 export default function TracingPaperPage() {
   const [isEnabled, setIsEnabled] = useState(true);
   const [opacity, setOpacity] = useState(0.4);
   const [blurAmount, setBlurAmount] = useState(8);
+  const [textureType, setTextureType] = useState<TextureType>("fine");
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setUploadedImage(url);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 relative">
       {/* ナビゲーション */}
-      <div className="fixed top-4 left-4 z-50">
+      <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
         <Link
           href="/"
           className="bg-white/80 dark:bg-black/50 backdrop-blur-md px-4 py-2 rounded-full shadow-lg hover:bg-white dark:hover:bg-black transition-colors text-sm font-medium text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700"
         >
           ← ホーム
         </Link>
+        <ThemeToggle />
       </div>
 
       {/* コントロールパネル */}
-      <div className="fixed top-4 right-4 z-50 w-72 bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-5 space-y-5">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-          Tracing Paper Effect
-        </h2>
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-3xl px-4">
+        <div className="bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
+            <div className="flex items-center gap-4 min-w-fit">
+              <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                Tracing Paper
+              </h2>
+              <TouchCheckbox
+                id="effect-toggle"
+                label="有効"
+                checked={isEnabled}
+                onChange={setIsEnabled}
+              />
+            </div>
 
-        <div className="space-y-4">
-          <TouchCheckbox
-            id="effect-toggle"
-            label="エフェクト有効"
-            checked={isEnabled}
-            onChange={setIsEnabled}
-          />
+            {/* テクスチャ切り替えスイッチ */}
+            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <button
+                onClick={() => setTextureType("fine")}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  textureType === "fine"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                }`}
+              >
+                Smooth
+              </button>
+              <button
+                onClick={() => setTextureType("rough")}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  textureType === "rough"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                }`}
+              >
+                Rough
+              </button>
+            </div>
 
-          <TouchSlider
-            label="不透明度"
-            value={opacity}
-            min={0}
-            max={1}
-            step={0.01}
-            onChange={setOpacity}
-            disabled={!isEnabled}
-            formatValue={(v) => `${Math.round(v * 100)}%`}
-          />
-
-          <TouchSlider
-            label="ブラー強度"
-            value={blurAmount}
-            min={0}
-            max={30}
-            step={0.5}
-            onChange={setBlurAmount}
-            disabled={!isEnabled}
-            formatValue={(v) => `${v}px`}
-          />
-        </div>
-
-        <div className="pt-2 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
-          <p>CSS backdrop-filter + SVG Noise Filter</p>
+            <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
+              <div className="flex-1">
+                <TouchSlider
+                  label="不透明度"
+                  value={opacity}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onChange={setOpacity}
+                  disabled={!isEnabled}
+                  formatValue={(v) => `${Math.round(v * 100)}%`}
+                />
+              </div>
+              <div className="flex-1">
+                <TouchSlider
+                  label="ブラー"
+                  value={blurAmount}
+                  min={0}
+                  max={30}
+                  step={0.5}
+                  onChange={setBlurAmount}
+                  disabled={!isEnabled}
+                  formatValue={(v) => `${v}px`}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* メインコンテンツエリア */}
-      <main className="relative min-h-screen p-8 pb-32 flex flex-col items-center justify-center overflow-hidden">
-        {/* 背景装飾 */}
-        <div className="absolute inset-0 z-0">
-          {/* グラデーション背景 */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 dark:from-blue-950 dark:via-purple-950 dark:to-pink-950" />
-
-          {/* パターン背景 */}
-          <div
-            className="absolute inset-0 opacity-20"
-            style={{
-              backgroundImage: "radial-gradient(#444 1px, transparent 1px)",
-              backgroundSize: "24px 24px",
-            }}
-          />
-
-          {/* ランダムな円 */}
-          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob" />
-          <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000" />
-          <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000" />
-        </div>
-
+      <main className="relative min-h-screen p-8 pb-64 flex flex-col items-center justify-center overflow-hidden">
         {/* コンテンツコンテナ */}
         <div className="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8">
           {/* 左側: 画像コンテンツ */}
@@ -99,8 +119,8 @@ export default function TracingPaperPage() {
             />
 
             <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black/80 to-transparent text-white">
-              <h3 className="text-3xl font-bold mb-2">Nature & Books</h3>
-              <p className="text-white/90">読書体験を拡張する静かな空間</p>
+              <h3 className="text-3xl font-bold mb-2">Sample Image & Text</h3>
+              <p className="text-white/90">サンプルの画像とテキスト</p>
             </div>
 
             {/* トレーシングペーパーオーバーレイ（画像の上のみ） */}
@@ -110,6 +130,7 @@ export default function TracingPaperPage() {
                   className="w-full h-full"
                   opacity={opacity}
                   blurAmount={blurAmount}
+                  textureType={textureType}
                 >
                   <div className="w-full h-full flex items-center justify-center p-12">
                     <div className="border border-black/10 dark:border-white/20 p-8 w-full h-full flex flex-col justify-between">
@@ -118,12 +139,13 @@ export default function TracingPaperPage() {
                       </div>
                       <div className="text-center">
                         <p className="text-2xl font-serif italic text-gray-900 dark:text-gray-100 leading-relaxed">
-                          &quot;The haze of memory layers over the reality,
-                          softening the edges.&quot;
+                          この文章はトレーシングペーパーの上に表示されています。
                         </p>
                       </div>
                       <div className="text-right text-xs font-mono text-gray-800 dark:text-gray-200 opacity-70">
-                        CSS & SVG FILTER
+                        {textureType === "fine"
+                          ? "SMOOTH TEXTURE"
+                          : "ROUGH TEXTURE"}
                       </div>
                     </div>
                   </div>
@@ -149,28 +171,20 @@ export default function TracingPaperPage() {
                 奥行きと情報の階層を作り出すことができます。
               </p>
               <p>
-                このデモでは、WebGPUを使用せずに、標準的なCSSとSVGフィルターのみを使用して
+                このデモでは、標準的なCSSとSVGフィルターのみを使用して
                 この効果を実現しています。パフォーマンスと互換性を維持しながら、
                 リッチな表現が可能です。
               </p>
             </div>
 
-            <div className="mt-12 flex gap-4">
-              <button className="px-6 py-3 bg-black dark:bg-white text-white dark:text-black rounded-full font-medium hover:opacity-90 transition-opacity">
-                Read More
-              </button>
-              <button className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-full font-medium hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                Explore
-              </button>
-            </div>
-
             {/* テキストエリアの一部にオーバーレイをかける例 */}
             {isEnabled && (
-              <div className="absolute -right-4 top-1/4 w-1/2 h-64 transform rotate-3 pointer-events-none">
+              <div className="absolute z-100 -right-4 top-1/4 w-1/2 h-64 transform rotate-3 pointer-events-none">
                 <TracingPaper
                   className="w-full h-full rounded-lg shadow-lg"
                   opacity={opacity}
                   blurAmount={blurAmount}
+                  textureType={textureType}
                 >
                   <div className="w-full h-full flex items-center justify-center">
                     <span className="text-4xl font-bold text-gray-900/50 dark:text-white/50 transform -rotate-3 mix-blend-multiply dark:mix-blend-screen">
@@ -179,6 +193,61 @@ export default function TracingPaperPage() {
                   </div>
                 </TracingPaper>
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* 新しいセクション: 画像アップロード */}
+        <div className="w-full max-w-5xl mt-32 mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center">
+            Try with Your Image
+          </h2>
+
+          <div className="relative w-full aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center group">
+            {uploadedImage ? (
+              <div className="relative w-full h-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={uploadedImage}
+                  alt="Uploaded"
+                  className="w-full h-full object-cover"
+                />
+
+                {isEnabled && (
+                  <div className="absolute inset-0">
+                    <TracingPaper
+                      className="w-full h-full"
+                      opacity={opacity}
+                      blurAmount={blurAmount}
+                      textureType={textureType}
+                    />
+                  </div>
+                )}
+
+                {/* Reset Button */}
+                <button
+                  onClick={() => setUploadedImage(null)}
+                  className="absolute top-4 right-4 bg-black/50 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/70 transition-colors z-20 backdrop-blur-sm"
+                >
+                  Change Image
+                </button>
+              </div>
+            ) : (
+              <label className="cursor-pointer w-full h-full flex flex-col items-center justify-center p-8 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+                <div className="text-6xl mb-4 opacity-50">🖼️</div>
+                <p className="text-lg font-medium text-gray-600 dark:text-gray-400">
+                  Click to upload an image
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
+                  JPG, PNG, WebP supported
+                </p>
+              </label>
             )}
           </div>
         </div>

@@ -63,12 +63,20 @@ export default function Home() {
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300 mb-3 sm:mb-4">
                 CSS filterとbackdrop-filterを使ったブラー効果
               </p>
-              <Link
-                href="/css"
-                className="block w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-center"
-              >
-                CSS Blur サンプル
-              </Link>
+              <div className="space-y-2">
+                <Link
+                  href="/css"
+                  className="block w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-center"
+                >
+                  CSS Blur サンプル
+                </Link>
+                <Link
+                  href="/css/tracing-paper"
+                  className="block w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-center"
+                >
+                  トレーシングペーパー表現
+                </Link>
+              </div>
             </div>
 
             {/* Canvas セクション */}
