@@ -39,40 +39,42 @@ export default function TracingPaperPage() {
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-3xl px-4">
         <div className="bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-6">
-            <div className="flex items-center gap-4 min-w-fit">
-              <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">
-                Tracing Paper
-              </h2>
-              <TouchCheckbox
-                id="effect-toggle"
-                label="有効"
-                checked={isEnabled}
-                onChange={setIsEnabled}
-              />
-            </div>
+            <div className="flex flex-col items-center gap-2 min-w-fit">
+              <div className="flex items-center gap-4 min-w-fit">
+                <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">
+                  Tracing Paper
+                </h2>
+                <TouchCheckbox
+                  id="effect-toggle"
+                  label="有効"
+                  checked={isEnabled}
+                  onChange={setIsEnabled}
+                />
+              </div>
 
-            {/* テクスチャ切り替えスイッチ */}
-            <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-              <button
-                onClick={() => setTextureType("fine")}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  textureType === "fine"
-                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                }`}
-              >
-                Smooth
-              </button>
-              <button
-                onClick={() => setTextureType("rough")}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                  textureType === "rough"
-                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-                }`}
-              >
-                Rough
-              </button>
+              {/* テクスチャ切り替えスイッチ */}
+              <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setTextureType("fine")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    textureType === "fine"
+                      ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Smooth
+                </button>
+                <button
+                  onClick={() => setTextureType("rough")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                    textureType === "rough"
+                      ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+                  }`}
+                >
+                  Rough
+                </button>
+              </div>
             </div>
 
             <div className="flex flex-1 items-center gap-4 w-full sm:w-auto">
