@@ -180,9 +180,9 @@ export default function TracingPaperPage() {
                       label="周波数 (密度・方向)"
                       valueX={baseFrequencyX}
                       valueY={baseFrequencyY}
-                      min={0.001}
-                      max={1.5}
-                      step={0.001}
+                      min={0.0001}
+                      max={0.5}
+                      step={0.0001}
                       onChange={(x, y) => {
                         setBaseFrequencyX(x);
                         setBaseFrequencyY(y);
@@ -300,7 +300,7 @@ export default function TracingPaperPage() {
             Try with Your Image
           </h2>
 
-          <div className="relative w-full aspect-video bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center group">
+          <div className="relative w-full aspect-square max-w-lg mx-auto bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center group">
             {uploadedImage ? (
               <div className="relative w-full h-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

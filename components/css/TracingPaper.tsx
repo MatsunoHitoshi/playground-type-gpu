@@ -51,16 +51,30 @@ export function TracingPaper({
   const uniqueKey = `${textureType}-${baseFrequency}-${numOctaves}`;
 
   return (
-    <>
-      {/* ノイズ生成用のSVGフィルター定義 */}
-      <svg className="hidden fixed" key={uniqueKey}>
-        <filter id={noiseId}>
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{
+        backgroundColor: `rgba(255, 255, 255, ${opacity})`,
+        backdropFilter: `blur(${blurAmount}px)`,
+        WebkitBackdropFilter: `blur(${blurAmount}px)`, // Safari用
+      }}
+    >
+      {/* ノイズ生成用のSVG (iOS対策としてHTML要素にfilterをかけるのではなく、SVGのrectを表示する) */}
+      <svg
+        key={uniqueKey}
+        className="absolute inset-0 pointer-events-none z-0 w-full h-full opacity-40 mix-blend-overlay"
+        style={{
+          // Safariでの再描画トリガー用ハック
+          transform: "translateZ(0)",
+        }}
+      >
+        <filter id={noiseId} x="0" y="0" width="100%" height="100%">
           {/* 紙の繊維感のような細かなノイズ */}
           <feTurbulence
             type={type}
             baseFrequency={baseFrequency}
             numOctaves={numOctaves}
-            stitchTiles="stitch"
+            stitchTiles="noStitch"
             result="noise"
           />
 
@@ -91,29 +105,13 @@ export function TracingPaper({
             result="coloredNoise"
           />
         </filter>
+
+        {/* フィルターを適用したRectを描画 */}
+        <rect width="100%" height="100%" filter={`url(#${noiseId})`} />
       </svg>
 
-      <div
-        className={`relative overflow-hidden ${className}`}
-        style={{
-          backgroundColor: `rgba(255, 255, 255, ${opacity})`,
-          backdropFilter: `blur(${blurAmount}px)`,
-          WebkitBackdropFilter: `blur(${blurAmount}px)`, // Safari用
-        }}
-      >
-        {/* ノイズレイヤー */}
-        <div
-          className="absolute inset-0 pointer-events-none z-0 opacity-40 mix-blend-overlay"
-          style={{
-            filter: `url(#${noiseId})`,
-            // Safariでの再描画トリガー用ハック
-            transform: "translateZ(0)",
-          }}
-        />
-
-        {/* コンテンツ */}
-        <div className="relative z-10">{children}</div>
-      </div>
-    </>
+      {/* コンテンツ */}
+      <div className="relative z-10">{children}</div>
+    </div>
   );
 }
