@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useState, useCallback } from "react";
 
 interface TouchPadProps {
   label: string;
@@ -55,8 +55,14 @@ export function TouchPad({
       if (!containerRef.current || disabled) return;
 
       const rect = containerRef.current.getBoundingClientRect();
-      const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-      const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+      const x = Math.max(
+        0,
+        Math.min(100, ((e.clientX - rect.left) / rect.width) * 100)
+      );
+      const y = Math.max(
+        0,
+        Math.min(100, ((e.clientY - rect.top) / rect.height) * 100)
+      );
 
       // Y軸は上が0、下が100%だが、グラフ的には下がmin、上がmaxの方が直感的か？
       // 通常のXYパッドは左下が(min, min)であることが多い。
@@ -135,12 +141,15 @@ export function TouchPad({
             top: `${posY}%`,
           }}
         />
-        
+
         {/* 軸ラベル */}
-        <div className="absolute bottom-1 right-2 text-[10px] text-gray-400 pointer-events-none">X</div>
-        <div className="absolute top-1 left-2 text-[10px] text-gray-400 pointer-events-none">Y</div>
+        <div className="absolute bottom-1 right-2 text-[10px] text-gray-400 pointer-events-none">
+          X
+        </div>
+        <div className="absolute top-1 left-2 text-[10px] text-gray-400 pointer-events-none">
+          Y
+        </div>
       </div>
     </div>
   );
 }
-

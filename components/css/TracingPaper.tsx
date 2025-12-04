@@ -19,7 +19,7 @@ export function TracingPaper({
   children,
   opacity = 0.4,
   blurAmount = 8,
-  textureType = "fine",
+  textureType = "rough",
   baseFrequency: propBaseFrequency,
   numOctaves: propNumOctaves,
 }: TracingPaperProps) {
@@ -46,10 +46,14 @@ export function TracingPaper({
   const numOctaves = propNumOctaves?.toString() ?? defaultParams.numOctaves;
   const type = defaultParams.type;
 
+  // Safari対策: パラメータが変わるたびにIDを変更して強制的に再描画させる
+  // ただし、パフォーマンスへの影響を考慮し、過度な変更は避ける
+  const uniqueKey = `${textureType}-${baseFrequency}-${numOctaves}`;
+
   return (
     <>
       {/* ノイズ生成用のSVGフィルター定義 */}
-      <svg className="hidden fixed">
+      <svg className="hidden fixed" key={uniqueKey}>
         <filter id={noiseId}>
           {/* 紙の繊維感のような細かなノイズ */}
           <feTurbulence
@@ -102,6 +106,8 @@ export function TracingPaper({
           className="absolute inset-0 pointer-events-none z-0 opacity-40 mix-blend-overlay"
           style={{
             filter: `url(#${noiseId})`,
+            // Safariでの再描画トリガー用ハック
+            transform: "translateZ(0)",
           }}
         />
 

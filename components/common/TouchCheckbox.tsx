@@ -22,6 +22,7 @@ export function TouchCheckbox({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           className="sr-only"
+          suppressHydrationWarning
         />
         <div
           className={`w-6 h-6 sm:w-7 sm:h-7 rounded-md border-2 transition-all duration-200 flex items-center justify-center ${
@@ -55,4 +56,3 @@ export function TouchCheckbox({
     </div>
   );
 }
-

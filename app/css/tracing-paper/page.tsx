@@ -12,9 +12,9 @@ export default function TracingPaperPage() {
   const [isEnabled, setIsEnabled] = useState(true);
   const [opacity, setOpacity] = useState(0.4);
   const [blurAmount, setBlurAmount] = useState(8);
-  const [textureType, setTextureType] = useState<TextureType>("fine");
-  const [baseFrequencyX, setBaseFrequencyX] = useState(0.8);
-  const [baseFrequencyY, setBaseFrequencyY] = useState(0.8);
+  const [textureType, setTextureType] = useState<TextureType>("rough");
+  const [baseFrequencyX, setBaseFrequencyX] = useState(0.04);
+  const [baseFrequencyY, setBaseFrequencyY] = useState(0.04);
   const [numOctaves, setNumOctaves] = useState(3);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
@@ -54,39 +54,39 @@ export default function TracingPaperPage() {
       </div>
 
       {/* コントロールパネル */}
-      <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-4xl transition-all duration-300 ease-in-out">
-        <div className="bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3 sm:p-4">
+      <div className="fixed bottom-4 left-2 right-2 sm:left-4 sm:right-4 z-50 mx-auto max-w-4xl transition-all duration-300 ease-in-out">
+        <div className="bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3">
           <div className="flex flex-col">
             {/* ヘッダー行: タイトル、有効スイッチ、展開ボタン */}
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
               <div
-                className="flex items-center gap-3 cursor-pointer"
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer"
                 onClick={() => setIsPanelExpanded(!isPanelExpanded)}
               >
                 <button className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className={`transform transition-transform duration-300 ${
+                    className={`transform transition-transform duration-300 sm:w-5 sm:h-5 ${
                       isPanelExpanded ? "rotate-180" : ""
                     }`}
                   >
                     <path d="m18 15-6-6-6 6" />
                   </svg>
                 </button>
-                <h2 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white">
+                <h2 className="text-xs sm:text-base font-bold text-gray-900 dark:text-white whitespace-nowrap">
                   Tracing Paper
                 </h2>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div
                   className={`transition-opacity duration-300 ${
                     isPanelExpanded
@@ -95,10 +95,10 @@ export default function TracingPaperPage() {
                   }`}
                 >
                   {/* テクスチャ切り替えスイッチ (展開時またはPCで表示) */}
-                  <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1 scale-90 origin-right">
+                  <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 sm:p-1 scale-90 origin-right">
                     <button
                       onClick={() => handleTextureChange("fine")}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                      className={`px-2 py-1 rounded text-[10px] sm:text-xs font-medium transition-all ${
                         textureType === "fine"
                           ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
                           : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
@@ -108,7 +108,7 @@ export default function TracingPaperPage() {
                     </button>
                     <button
                       onClick={() => handleTextureChange("rough")}
-                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                      className={`px-2 py-1 rounded text-[10px] sm:text-xs font-medium transition-all ${
                         textureType === "rough"
                           ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
                           : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
@@ -119,12 +119,14 @@ export default function TracingPaperPage() {
                   </div>
                 </div>
 
-                <TouchCheckbox
-                  id="effect-toggle"
-                  label="有効"
-                  checked={isEnabled}
-                  onChange={setIsEnabled}
-                />
+                <div className="scale-90 sm:scale-100 origin-right">
+                  <TouchCheckbox
+                    id="effect-toggle"
+                    label="有効"
+                    checked={isEnabled}
+                    onChange={setIsEnabled}
+                  />
+                </div>
               </div>
             </div>
 
@@ -132,14 +134,14 @@ export default function TracingPaperPage() {
             <div
               className={`grid transition-all duration-300 ease-in-out ${
                 isPanelExpanded
-                  ? "grid-rows-[1fr] opacity-100 mt-4"
+                  ? "grid-rows-[1fr] opacity-100 mt-2 sm:mt-4"
                   : "grid-rows-[0fr] opacity-0 mt-0"
               }`}
             >
               <div className="overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-1 max-h-[45vh] overflow-y-auto overscroll-contain pr-1">
                   {/* スライダー群 */}
-                  <div className="md:col-span-1 flex flex-col gap-3">
+                  <div className="md:col-span-1 flex flex-col gap-2 sm:gap-3">
                     <TouchSlider
                       label="不透明度"
                       value={opacity}
@@ -173,7 +175,7 @@ export default function TracingPaperPage() {
                   </div>
 
                   {/* XYパッド */}
-                  <div className="md:col-span-2 h-full min-h-[200px]">
+                  <div className="md:col-span-2 h-full min-h-[180px] sm:min-h-[200px]">
                     <TouchPad
                       label="周波数 (密度・方向)"
                       valueX={baseFrequencyX}
