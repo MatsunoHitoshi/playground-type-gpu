@@ -10,6 +10,8 @@ interface TracingPaperProps {
   opacity?: number;
   blurAmount?: number;
   textureType?: TextureType;
+  baseFrequency?: number | string;
+  numOctaves?: number;
 }
 
 export function TracingPaper({
@@ -18,6 +20,8 @@ export function TracingPaper({
   opacity = 0.4,
   blurAmount = 8,
   textureType = "fine",
+  baseFrequency: propBaseFrequency,
+  numOctaves: propNumOctaves,
 }: TracingPaperProps) {
   const filterId = React.useId();
   const noiseId = `noise-${filterId}`;
@@ -25,18 +29,22 @@ export function TracingPaper({
   // ノイズパラメータの設定
   const noiseParams = {
     fine: {
-      baseFrequency: "0.8",
+      baseFrequency: "0.8 0.01",
       numOctaves: "3",
       type: "fractalNoise" as const,
     },
     rough: {
-      baseFrequency: "0.04",
+      baseFrequency: "0.02 0.5",
       numOctaves: "50",
       type: "fractalNoise" as const, // 荒い紙の質感を出すためにfractalNoiseを使用
     },
   };
 
-  const params = noiseParams[textureType];
+  const defaultParams = noiseParams[textureType];
+  const baseFrequency =
+    propBaseFrequency?.toString() ?? defaultParams.baseFrequency;
+  const numOctaves = propNumOctaves?.toString() ?? defaultParams.numOctaves;
+  const type = defaultParams.type;
 
   return (
     <>
@@ -45,9 +53,9 @@ export function TracingPaper({
         <filter id={noiseId}>
           {/* 紙の繊維感のような細かなノイズ */}
           <feTurbulence
-            type={params.type}
-            baseFrequency={params.baseFrequency}
-            numOctaves={params.numOctaves}
+            type={type}
+            baseFrequency={baseFrequency}
+            numOctaves={numOctaves}
             stitchTiles="stitch"
             result="noise"
           />
