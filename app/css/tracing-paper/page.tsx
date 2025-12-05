@@ -18,6 +18,9 @@ export default function TracingPaperPage() {
   const [numOctaves, setNumOctaves] = useState(3);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
+  const [paperWidth, setPaperWidth] = useState(100);
+  const [paperHeight, setPaperHeight] = useState(100);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const handleTextureChange = (type: TextureType) => {
     setTextureType(type);
@@ -54,7 +57,11 @@ export default function TracingPaperPage() {
       </div>
 
       {/* コントロールパネル */}
-      <div className="fixed bottom-4 left-2 right-2 sm:left-4 sm:right-4 z-50 mx-auto max-w-4xl transition-all duration-300 ease-in-out">
+      <div
+        className={`fixed bottom-4 left-2 right-2 sm:left-4 sm:right-4 z-50 mx-auto max-w-4xl transition-all duration-300 ease-in-out ${
+          isFullscreen ? "z-[100]" : ""
+        }`}
+      >
         <div className="bg-white/90 dark:bg-black/80 backdrop-blur-md rounded-xl sm:rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-3">
           <div className="flex flex-col">
             {/* ヘッダー行: タイトル、有効スイッチ、展開ボタン */}
@@ -175,7 +182,7 @@ export default function TracingPaperPage() {
                   </div>
 
                   {/* XYパッド */}
-                  <div className="md:col-span-2 h-full min-h-[180px] sm:min-h-[200px]">
+                  <div className="md:col-span-2 h-full min-h-[180px] sm:min-h-[200px] flex flex-col gap-4">
                     <TouchPad
                       label="周波数 (密度・方向)"
                       valueX={baseFrequencyX}
@@ -190,6 +197,32 @@ export default function TracingPaperPage() {
                       disabled={!isEnabled}
                       formatValue={(v) => v.toFixed(3)}
                     />
+
+                    {/* サイズ調整スライダー (画像表示時のみ有効) */}
+                    {uploadedImage && (
+                      <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <TouchSlider
+                          label="紙の幅"
+                          value={paperWidth}
+                          min={10}
+                          max={100}
+                          step={1}
+                          onChange={setPaperWidth}
+                          disabled={!isEnabled}
+                          formatValue={(v) => `${v}%`}
+                        />
+                        <TouchSlider
+                          label="紙の高さ"
+                          value={paperHeight}
+                          min={10}
+                          max={100}
+                          step={1}
+                          onChange={setPaperHeight}
+                          disabled={!isEnabled}
+                          formatValue={(v) => `${v}%`}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -275,20 +308,24 @@ export default function TracingPaperPage() {
             {/* テキストエリアの一部にオーバーレイをかける例 */}
             {isEnabled && (
               <div className="absolute z-100 -right-4 top-1/4 w-1/2 h-64 transform rotate-3 pointer-events-none">
-                <TracingPaper
-                  className="w-full h-full rounded-lg shadow-lg"
-                  opacity={opacity}
-                  blurAmount={blurAmount}
-                  textureType={textureType}
-                  baseFrequency={`${baseFrequencyX} ${baseFrequencyY}`}
-                  numOctaves={numOctaves}
-                >
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-4xl font-bold text-gray-900/50 dark:text-white/50 transform -rotate-3 mix-blend-multiply dark:mix-blend-screen">
-                      OVERLAY
-                    </span>
+                {/* 下地となるテキスト */}
+                <div className="w-full h-full flex items-center justify-center relative">
+                  <span className="text-4xl font-bold text-gray-900/50 dark:text-white/50 transform -rotate-3 mix-blend-multiply dark:mix-blend-screen">
+                    OVERLAY
+                  </span>
+
+                  {/* 上に被せるトレーシングペーパー */}
+                  <div className="absolute inset-0">
+                    <TracingPaper
+                      className="w-full h-full rounded-lg shadow-lg"
+                      opacity={opacity}
+                      blurAmount={blurAmount}
+                      textureType={textureType}
+                      baseFrequency={`${baseFrequencyX} ${baseFrequencyY}`}
+                      numOctaves={numOctaves}
+                    />
                   </div>
-                </TracingPaper>
+                </div>
               </div>
             )}
           </div>
@@ -307,19 +344,27 @@ export default function TracingPaperPage() {
                 <img
                   src={uploadedImage}
                   alt="Uploaded"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
 
                 {isEnabled && (
-                  <div className="absolute inset-0">
-                    <TracingPaper
-                      className="w-full h-full"
-                      opacity={opacity}
-                      blurAmount={blurAmount}
-                      textureType={textureType}
-                      baseFrequency={`${baseFrequencyX} ${baseFrequencyY}`}
-                      numOctaves={numOctaves}
-                    />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div
+                      style={{
+                        width: `${paperWidth}%`,
+                        height: `${paperHeight}%`,
+                        transition: "width 0.3s, height 0.3s",
+                      }}
+                    >
+                      <TracingPaper
+                        className="w-full h-full rounded-lg shadow-lg border border-white/20"
+                        opacity={opacity}
+                        blurAmount={blurAmount}
+                        textureType={textureType}
+                        baseFrequency={`${baseFrequencyX} ${baseFrequencyY}`}
+                        numOctaves={numOctaves}
+                      />
+                    </div>
                   </div>
                 )}
 
@@ -329,6 +374,27 @@ export default function TracingPaperPage() {
                   className="absolute top-4 right-4 bg-black/50 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/70 transition-colors z-20 backdrop-blur-sm"
                 >
                   Change Image
+                </button>
+
+                {/* 最大化ボタン */}
+                <button
+                  onClick={() => setIsFullscreen(true)}
+                  className="absolute top-4 left-4 bg-black/50 text-white p-2 rounded-lg hover:bg-black/70 transition-colors z-20 backdrop-blur-sm"
+                  title="画面最大に表示"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                  </svg>
                 </button>
               </div>
             ) : (
@@ -351,6 +417,64 @@ export default function TracingPaperPage() {
           </div>
         </div>
       </main>
+
+      {/* フルスクリーン表示 */}
+      {isFullscreen && uploadedImage && (
+        <div className="fixed inset-0 z-[90] bg-black/95 flex items-center justify-center p-4">
+          {/* 閉じるボタン */}
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg transition-colors z-[100] backdrop-blur-sm"
+            title="閉じる"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+
+          {/* 最大化された画像 */}
+          <div className="relative w-full h-full max-w-[95vw] max-h-[95vh] flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={uploadedImage}
+              alt="Uploaded Fullscreen"
+              className="max-w-full max-h-full object-contain"
+            />
+
+            {/* トレーシングペーパーオーバーレイ */}
+            {isEnabled && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div
+                  style={{
+                    width: `${paperWidth}%`,
+                    height: `${paperHeight}%`,
+                    transition: "width 0.3s, height 0.3s",
+                  }}
+                >
+                  <TracingPaper
+                    className="w-full h-full rounded-lg shadow-lg border border-white/20"
+                    opacity={opacity}
+                    blurAmount={blurAmount}
+                    textureType={textureType}
+                    baseFrequency={`${baseFrequencyX} ${baseFrequencyY}`}
+                    numOctaves={numOctaves}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

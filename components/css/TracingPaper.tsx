@@ -51,14 +51,17 @@ export function TracingPaper({
   const uniqueKey = `${textureType}-${baseFrequency}-${numOctaves}`;
 
   return (
-    <div
-      className={`relative overflow-hidden ${className}`}
-      style={{
-        backgroundColor: `rgba(255, 255, 255, ${opacity})`,
-        backdropFilter: `blur(${blurAmount}px)`,
-        WebkitBackdropFilter: `blur(${blurAmount}px)`, // Safari用
-      }}
-    >
+    <div className={`relative overflow-hidden ${className}`}>
+      {/* 背景ぼかし層: 親要素から分離して独立させる */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundColor: `rgba(255, 255, 255, ${opacity})`,
+          backdropFilter: `blur(${blurAmount}px)`,
+          WebkitBackdropFilter: `blur(${blurAmount}px)`, // Safari用
+        }}
+      />
+
       {/* ノイズ生成用のSVG (iOS対策としてHTML要素にfilterをかけるのではなく、SVGのrectを表示する) */}
       <svg
         key={uniqueKey}
@@ -84,10 +87,10 @@ export function TracingPaper({
               <feDiffuseLighting
                 in="noise"
                 lightingColor="white"
-                surfaceScale="2"
+                surfaceScale="12"
                 result="diffuseNoise"
               >
-                <feDistantLight azimuth="45" elevation="60" />
+                <feDistantLight azimuth="20" elevation="60" />
               </feDiffuseLighting>
             </>
           )}
@@ -100,7 +103,7 @@ export function TracingPaper({
             values="0 1 0 0 0
                     0 1 0 0 0
                     0 1 0 0 0
-                    0 0 0 0.5 0"
+                    0 0 0 1 -0.1"
             in={textureType === "rough" ? "diffuseNoise" : "noise"}
             result="coloredNoise"
           />
